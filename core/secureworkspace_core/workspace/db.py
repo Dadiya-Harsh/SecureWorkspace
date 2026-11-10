@@ -250,8 +250,8 @@ class WorkspaceDB:
                     file_id, path_hash, encrypted_path, remote_id, size,
                     mtime_ms, sha256, sync_status, updated_at_ms
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(file_id) DO UPDATE SET
-                    path_hash = excluded.path_hash,
+                ON CONFLICT(path_hash) DO UPDATE SET
+                    file_id = excluded.file_id,
                     encrypted_path = excluded.encrypted_path,
                     remote_id = excluded.remote_id,
                     size = excluded.size,
