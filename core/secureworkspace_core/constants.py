@@ -21,3 +21,5 @@ MAC_BYTES = 16          # Poly1305 MAC tag length
 # Subkey Contexts (must be exactly 8 bytes for libsodium crypto_kdf)
 CONTEXT_FILE_KEY = b"SW_FKEY_"
 CONTEXT_INDEX_KEY = b"SW_INDX_"
+CONTEXT_META_KEY = b"SW_META_"
+

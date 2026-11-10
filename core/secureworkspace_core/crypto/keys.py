@@ -16,6 +16,7 @@ from nacl.exceptions import CryptoError
 from secureworkspace_core.constants import (
     CONTEXT_FILE_KEY,
     CONTEXT_INDEX_KEY,
+    CONTEXT_META_KEY,
     KEY_BYTES,
     NONCE_BYTES,
 )
@@ -94,3 +95,21 @@ def derive_index_key(wmk: bytes) -> bytes:
         person=CONTEXT_INDEX_KEY,
         encoder=encoding.RawEncoder,
     )
+
+
+def derive_meta_key(wmk: bytes) -> bytes:
+    """
+    Derives the 256-bit metadata encryption key from the WMK
+    using BLAKE2b keyed hashing with 'SW_META_' personalization.
+    """
+    if len(wmk) != KEY_BYTES:
+        raise ValueError(f"WMK must be {KEY_BYTES} bytes, got {len(wmk)}")
+
+    return nacl.hash.generichash(
+        b"workspace_metadata_db",
+        digest_size=KEY_BYTES,
+        key=wmk,
+        person=CONTEXT_META_KEY,
+        encoder=encoding.RawEncoder,
+    )
+

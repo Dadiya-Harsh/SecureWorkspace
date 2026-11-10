@@ -13,6 +13,7 @@ from secureworkspace_core.crypto.kdf import (
 from secureworkspace_core.crypto.keys import (
     derive_file_key,
     derive_index_key,
+    derive_meta_key,
     generate_wmk,
     unwrap_wmk,
     wrap_wmk,
@@ -92,13 +93,18 @@ def test_subkey_derivation():
     key_f1_again = derive_file_key(wmk, file_id_1)
     key_f2 = derive_file_key(wmk, file_id_2)
     key_index = derive_index_key(wmk)
+    key_meta = derive_meta_key(wmk)
 
     assert len(key_f1) == 32
     assert len(key_f2) == 32
     assert len(key_index) == 32
+    assert len(key_meta) == 32
 
     # Determinism
     assert key_f1 == key_f1_again
+    assert key_meta == derive_meta_key(wmk)
     # Separation
     assert key_f1 != key_f2
     assert key_f1 != key_index
+    assert key_f1 != key_meta
+    assert key_index != key_meta
