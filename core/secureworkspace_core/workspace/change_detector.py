@@ -17,6 +17,7 @@ DEFAULT_IGNORE_PATTERNS = [
     ".secureworkspace",
     ".secureworkspace/*",
     ".secureworkspace/**",
+    "workspace.header",
     ".git",
     ".git/*",
     ".git/**",
