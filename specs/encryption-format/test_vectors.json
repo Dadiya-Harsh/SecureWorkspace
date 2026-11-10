@@ -1,0 +1,24 @@
+{
+  "description": "SecureWorkspace Phase 1 Fixed Cryptographic Test Vectors",
+  "kdf": {
+    "password": "TestPassword#2026!",
+    "password_salt_hex": "30313233343536373839616263646566",
+    "derived_password_kek_hex": "9f099782759a6391a847e9a3d86f5fdc10b9d6d3d256d24e2441a624d76dab1d",
+    "recovery_phrase": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+    "recovery_entropy_hex": "0000000000000000000000000000000000000000000000000000000000000000",
+    "recovery_salt_hex": "66656463626139383736353433323130",
+    "derived_recovery_kek_hex": "ab4d44c01978037db03048d46274da41a228d1847eb3755b7d08393ac724a523"
+  },
+  "subkeys": {
+    "wmk_hex": "4242424242424242424242424242424242424242424242424242424242424242",
+    "file_id_hex": "07070707070707070707070707070707",
+    "derived_file_key_hex": "885dd94f6297279dae0e45864da91b230ccb3d0587a877c350ab75e5f2597279",
+    "derived_index_key_hex": "f9608268cab88484bf18044e43f9cdc2fd9a3d9dc054a368a7f0e30b20003a50"
+  },
+  "constants": {
+    "workspace_header_magic": "SWH1",
+    "file_magic": "SWF1",
+    "format_version": 1,
+    "chunk_size": 65536
+  }
+}

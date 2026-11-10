@@ -1,0 +1,31 @@
+# Python & Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Android Build & Gradle
+.gradle/
+**/build/
+local.properties
+*.apk
+
+# Credentials & OAuth secrets (Do not commit!)
+google outh clients/
+*client*.json
+*secret*.json
+*.keystore
+*.jks
+token.json
+**/token.json
+
+# OS files
+.DS_Store
+Thumbs.db
