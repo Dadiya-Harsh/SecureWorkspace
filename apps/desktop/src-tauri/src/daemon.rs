@@ -124,3 +124,31 @@ impl Drop for DaemonManager {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_daemon_roundtrip_ipc() {
+        let mut mgr = DaemonManager::new();
+        let ping_req = json!({
+            "id": 1,
+            "method": "ping"
+        });
+        let res = mgr.send_request(ping_req).expect("Ping should succeed");
+        assert_eq!(res["success"], true);
+        assert_eq!(res["data"]["pong"], true);
+        assert_eq!(res["id"], 1);
+
+        let auth_status_req = json!({
+            "id": 2,
+            "method": "google_auth_status",
+            "params": { "auto_connect": false }
+        });
+        let auth_res = mgr.send_request(auth_status_req).expect("Auth status should succeed");
+        assert_eq!(auth_res["success"], true);
+        assert_eq!(auth_res["data"]["authenticated"], true);
+    }
+}
