@@ -17,6 +17,7 @@ import nacl.utils
 from nacl.exceptions import CryptoError
 
 from secureworkspace_core.constants import KEY_BYTES
+from secureworkspace_core.auth import GoogleOAuthManager
 from secureworkspace_core.crypto.kdf import (
     DEFAULT_MEMLIMIT,
     DEFAULT_OPSLIMIT,
@@ -81,6 +82,7 @@ class APIErrorCode:
     INTEGRITY_ERROR = "INTEGRITY_ERROR"
     INVALID_ARGUMENT = "INVALID_ARGUMENT"
     INTERNAL_ERROR = "INTERNAL_ERROR"
+    AUTHENTICATION_ERROR = "AUTHENTICATION_ERROR"
 
 
 def success_response(data: Any = None, message: str = "") -> Dict[str, Any]:
@@ -110,7 +112,7 @@ class SecureWorkspaceAPI:
 
     HEADER_FILENAME = "workspace.header"
 
-    def __init__(self):
+    def __init__(self, oauth_manager: Optional[GoogleOAuthManager] = None):
         self._workspace_path: Optional[Path] = None
         self._header: Optional[WorkspaceHeader] = None
         self._wmk: Optional[bytes] = None
@@ -121,6 +123,7 @@ class SecureWorkspaceAPI:
         self._status_engine: Optional[StatusEngine] = None
         self._push_engine: Optional[PushEngine] = None
         self._pull_engine: Optional[PullEngine] = None
+        self._oauth_manager: GoogleOAuthManager = oauth_manager or GoogleOAuthManager()
 
     def _require_unlocked(self) -> None:
         if self._wmk is None or self._manager is None:
@@ -528,7 +531,7 @@ class SecureWorkspaceAPI:
         return success_response(data={"cleaned_count": cleaned})
 
     # -------------------------------------------------------------------------
-    # Git-Style Remote Sync (PRD FR-04, Flows 2, 5, 6, 7)
+    # Git-Style Remote Sync & OAuth (PRD FR-04, Flows 2, 5, 6, 7)
     # -------------------------------------------------------------------------
 
     def connect_storage(self, storage_adapter: StorageAdapter) -> Dict[str, Any]:
@@ -536,6 +539,84 @@ class SecureWorkspaceAPI:
         self._storage = storage_adapter
         self._init_sync_engines()
         return success_response(message="Storage adapter connected.")
+
+    def google_auth_status(self, auto_connect: bool = True) -> Dict[str, Any]:
+        """
+        Queries Google OAuth authentication status.
+        If authenticated and auto_connect is True, automatically attaches
+        GoogleDriveStorageAdapter via self.connect_storage().
+        """
+        if not self._oauth_manager.is_authenticated():
+            return success_response(
+                data={
+                    "authenticated": False,
+                    "email": None,
+                    "name": None,
+                    "picture": None,
+                    "storage_connected": self._storage is not None,
+                }
+            )
+
+        user_info: Dict[str, Any] = {}
+        try:
+            user_info = self._oauth_manager.get_user_info()
+        except Exception:
+            pass
+
+        if auto_connect and self._storage is None:
+            try:
+                adapter = self._oauth_manager.create_storage_adapter()
+                self.connect_storage(adapter)
+            except Exception:
+                pass
+
+        return success_response(
+            data={
+                "authenticated": True,
+                "email": user_info.get("email"),
+                "name": user_info.get("name"),
+                "picture": user_info.get("picture"),
+                "storage_connected": self._storage is not None,
+            }
+        )
+
+    def google_auth_login(self, port: int = 0) -> Dict[str, Any]:
+        """
+        Initiates Google OAuth local browser authentication flow.
+        Upon authorization, attaches GoogleDriveStorageAdapter to the active session.
+        """
+        try:
+            auth_data = self._oauth_manager.login(port=port)
+            adapter = self._oauth_manager.create_storage_adapter()
+            self.connect_storage(adapter)
+            return success_response(
+                data={
+                    "authenticated": True,
+                    "email": auth_data.get("email"),
+                    "name": auth_data.get("name"),
+                    "picture": auth_data.get("picture"),
+                    "storage_connected": True,
+                },
+                message="Google Drive authenticated successfully.",
+            )
+        except Exception as e:
+            return error_response(
+                APIErrorCode.AUTHENTICATION_ERROR,
+                f"OAuth login failed: {e}",
+            )
+
+    def google_auth_logout(self) -> Dict[str, Any]:
+        """Disconnects Google account and clears local credentials."""
+        self._oauth_manager.logout()
+        self._storage = None
+        self._manifest_manager = None
+        self._status_engine = None
+        self._push_engine = None
+        self._pull_engine = None
+        return success_response(
+            data={"authenticated": False, "storage_connected": False},
+            message="Google Drive disconnected.",
+        )
 
     def status(self, quick: bool = False) -> Dict[str, Any]:
         """

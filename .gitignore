@@ -25,6 +25,15 @@ google outh clients/
 *.jks
 token.json
 **/token.json
+*credentials*.json
+**/*credentials*.json
+
+# Node / Desktop / Rust
+node_modules/
+**/node_modules/
+**/dist/
+target/
+**/target/
 
 # OS files
 .DS_Store
