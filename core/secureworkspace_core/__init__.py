@@ -9,10 +9,12 @@ from secureworkspace_core.api import (
     error_response,
     success_response,
 )
+from secureworkspace_core.daemon import DaemonServer
 
 __all__ = [
     "APIErrorCode",
     "SecureWorkspaceAPI",
+    "DaemonServer",
     "error_response",
     "success_response",
 ]
