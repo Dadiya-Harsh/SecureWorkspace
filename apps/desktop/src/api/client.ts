@@ -80,7 +80,25 @@ class SecureWorkspaceClient {
   }
 
   async getStatus(quick: boolean = false): Promise<APIResponse<SyncStatusData>> {
-    return this.dispatch("status", { quick });
+    const res = await this.dispatch<any>("status", { quick });
+    if (!res.success || !res.data) return res;
+
+    const normalizeChanges = (list: any[] = []) =>
+      list.map((item) => ({
+        ...item,
+        relative_path: item.relative_path || item.path || "",
+        path: item.path || item.relative_path || "",
+        size_bytes: item.size_bytes ?? item.size ?? 0,
+        size: item.size ?? item.size_bytes ?? 0,
+        mtime_epoch: item.mtime_epoch ?? item.mtime_ms ?? 0,
+      }));
+
+    if (res.data.changes) {
+      res.data.changes.new = normalizeChanges(res.data.changes.new);
+      res.data.changes.modified = normalizeChanges(res.data.changes.modified);
+      res.data.changes.deleted = normalizeChanges(res.data.changes.deleted);
+    }
+    return res;
   }
 
   async listFiles(subpath: string = ""): Promise<APIResponse<{ files: WorkspaceFile[] }>> {
@@ -92,7 +110,7 @@ class SecureWorkspaceClient {
     // Adapt core FileRecord format to UI WorkspaceFile format
     const adapted: WorkspaceFile[] = res.data.files.map((f: any) => {
       const p = f.path || f.name || "";
-      const name = p.split("/").pop() || p;
+      const name = p.split(/[/\\]/).pop() || p;
       const size_bytes = f.size ?? f.size_bytes ?? 0;
       let modified_at = "Recently";
       if (f.mtime_ms) {
@@ -144,7 +162,25 @@ class SecureWorkspaceClient {
   }
 
   async pushPreview(): Promise<APIResponse<PushPreviewData>> {
-    return this.dispatch("push_preview");
+    const res = await this.dispatch<any>("push_preview");
+    if (!res.success || !res.data) return res;
+
+    const normalizeChanges = (list: any[] = []) =>
+      list.map((item) => ({
+        ...item,
+        relative_path: item.relative_path || item.path || "",
+        path: item.path || item.relative_path || "",
+        size_bytes: item.size_bytes ?? item.size ?? 0,
+        size: item.size ?? item.size_bytes ?? 0,
+      }));
+
+    if (res.data.files_to_upload) {
+      res.data.files_to_upload = normalizeChanges(res.data.files_to_upload);
+    }
+    if (res.data.files_to_delete) {
+      res.data.files_to_delete = normalizeChanges(res.data.files_to_delete);
+    }
+    return res;
   }
 
   async push(

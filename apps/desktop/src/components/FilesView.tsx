@@ -8,11 +8,14 @@ import {
   ExternalLink,
   Download,
   History,
+  FolderOpen,
 } from "lucide-react";
 import { WorkspaceFile, FileStatus } from "../api/types";
 
 interface FilesViewProps {
   files: WorkspaceFile[];
+  workspacePath?: string;
+  onOpenFolder?: () => void;
   onAddFiles: () => void;
   onOpenFile: (file: WorkspaceFile) => void;
   onExportFile: (file: WorkspaceFile) => void;
@@ -22,6 +25,8 @@ interface FilesViewProps {
 
 export const FilesView: React.FC<FilesViewProps> = ({
   files,
+  workspacePath,
+  onOpenFolder,
   onAddFiles,
   onOpenFile,
   onExportFile,
@@ -80,29 +85,45 @@ export const FilesView: React.FC<FilesViewProps> = ({
     <div className="relative p-8 max-w-6xl mx-auto space-y-6 pb-28">
       {/* Top Controls: Breadcrumb & Search & Action */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {/* Breadcrumb / Title */}
-        <div className="flex items-center gap-2 text-base font-semibold text-ink">
+        {/* Breadcrumb / Title & Path */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2.5 text-base font-semibold text-ink">
           <span className="text-ink">Workspace Files</span>
+          {workspacePath && (
+            <span className="font-mono text-xs text-ink-muted bg-surface-card px-2.5 py-0.5 rounded-md border border-line/60 truncate max-w-xs sm:max-w-md font-normal">
+              {workspacePath}
+            </span>
+          )}
         </div>
 
-        {/* Search Bar & Add Button */}
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
+        {/* Search Bar & Action Buttons */}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          {onOpenFolder && (
+            <button
+              onClick={onOpenFolder}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-line bg-surface-card text-ink hover:bg-mineral/40 transition shadow-2xs flex-shrink-0"
+              title="Open workspace folder in Windows Explorer"
+            >
+              <FolderOpen className="w-3.5 h-3.5 text-vault-green" />
+              Open Folder
+            </button>
+          )}
+
+          <div className="relative flex-1 sm:w-60">
             <Search className="w-4 h-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search names"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-line bg-surface-card text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:border-vault-green"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-line bg-surface-card text-xs text-ink placeholder:text-ink-muted focus:outline-none focus:border-vault-green"
             />
           </div>
 
           <button
             onClick={onAddFiles}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-vault-green text-white hover:bg-vault-hover transition shadow-sm flex-shrink-0"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-vault-green text-white hover:bg-vault-hover transition shadow-sm flex-shrink-0"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Add files
           </button>
         </div>

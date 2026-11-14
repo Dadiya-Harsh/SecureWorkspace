@@ -1,25 +1,54 @@
 import React from "react";
-import { ArrowUp, Check, AlertTriangle, HardDrive } from "lucide-react";
-import { SyncStatusData } from "../api/types";
+import { ArrowUp, Check, AlertTriangle, HardDrive, FolderOpen } from "lucide-react";
+import { SyncStatusData, WorkspaceFile } from "../api/types";
 
 interface DashboardViewProps {
   status: SyncStatusData;
+  files?: WorkspaceFile[];
+  workspacePath?: string;
+  onOpenFolder?: () => void;
   onPush: () => void;
   onBackup: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
   status,
+  files = [],
+  workspacePath,
+  onOpenFolder,
   onPush,
   onBackup,
 }) => {
+  const unpushedFiles = files.filter((f) => f.status === "not_pushed");
   const pendingCount =
-    status.changes.new.length +
+    (status.changes.new.length +
     status.changes.modified.length +
-    status.changes.deleted.length;
+    status.changes.deleted.length) ||
+    unpushedFiles.length;
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
+      {/* Workspace Location Bar */}
+      {workspacePath && (
+        <div className="bg-surface-card border border-line rounded-xl px-5 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2 text-xs truncate max-w-2xl">
+            <span className="text-ink-muted font-medium flex-shrink-0">Workspace Folder:</span>
+            <span className="font-mono text-ink font-semibold truncate bg-mineral/30 px-2 py-0.5 rounded border border-line/60">
+              {workspacePath}
+            </span>
+          </div>
+          {onOpenFolder && (
+            <button
+              onClick={onOpenFolder}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-line bg-surface hover:bg-mineral/40 text-ink transition flex-shrink-0 shadow-2xs"
+            >
+              <FolderOpen className="w-3.5 h-3.5 text-vault-green" />
+              Open Folder in Explorer
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Status & Changes Card (2 columns) */}
         <div className="lg:col-span-2 bg-surface-card rounded-xl border border-line p-6 shadow-sm">
@@ -82,41 +111,65 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             ) : (
               <div className="divide-y divide-line/60">
-                {status.changes.modified.map((file) => (
-                  <div key={file.relative_path} className="py-3 flex items-center justify-between">
-                    <span className="text-sm font-medium text-ink font-mono">
-                      {file.relative_path}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8]">
-                      <ArrowUp className="w-3 h-3" />
-                      Changed
-                    </span>
-                  </div>
-                ))}
+                {status.changes.modified.map((file) => {
+                  const p = file.relative_path || file.path;
+                  return (
+                    <div key={p} className="py-3 flex items-center justify-between">
+                      <span className="text-sm font-medium text-ink font-mono truncate max-w-md">
+                        {p}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8] flex-shrink-0">
+                        <ArrowUp className="w-3 h-3" />
+                        Changed
+                      </span>
+                    </div>
+                  );
+                })}
 
-                {status.changes.new.map((file) => (
-                  <div key={file.relative_path} className="py-3 flex items-center justify-between">
-                    <span className="text-sm font-medium text-ink font-mono">
-                      {file.relative_path}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E6F4EA] text-[#137333]">
-                      <Check className="w-3 h-3" />
-                      Added
-                    </span>
-                  </div>
-                ))}
+                {status.changes.new.map((file) => {
+                  const p = file.relative_path || file.path;
+                  return (
+                    <div key={p} className="py-3 flex items-center justify-between">
+                      <span className="text-sm font-medium text-ink font-mono truncate max-w-md">
+                        {p}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E6F4EA] text-[#137333] flex-shrink-0">
+                        <Check className="w-3 h-3" />
+                        Added
+                      </span>
+                    </div>
+                  );
+                })}
 
-                {status.changes.deleted.map((file) => (
-                  <div key={file.relative_path} className="py-3 flex items-center justify-between">
-                    <span className="text-sm font-medium text-ink font-mono line-through text-ink-muted">
-                      {file.relative_path}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FCE8E6] text-[#C5221F]">
-                      <AlertTriangle className="w-3 h-3" />
-                      Deleted
-                    </span>
-                  </div>
-                ))}
+                {/* Fallback to live unpushed files from files scan if status engine is offline */}
+                {status.changes.modified.length === 0 &&
+                  status.changes.new.length === 0 &&
+                  unpushedFiles.map((file) => (
+                    <div key={file.path} className="py-3 flex items-center justify-between">
+                      <span className="text-sm font-medium text-ink font-mono truncate max-w-md">
+                        {file.path}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#E8F0FE] text-[#1A73E8] flex-shrink-0">
+                        <ArrowUp className="w-3 h-3" />
+                        Waiting to push
+                      </span>
+                    </div>
+                  ))}
+
+                {status.changes.deleted.map((file) => {
+                  const p = file.relative_path || file.path;
+                  return (
+                    <div key={p} className="py-3 flex items-center justify-between">
+                      <span className="text-sm font-medium text-ink font-mono line-through text-ink-muted truncate max-w-md">
+                        {p}
+                      </span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#FCE8E6] text-[#C5221F] flex-shrink-0">
+                        <AlertTriangle className="w-3 h-3" />
+                        Deleted
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

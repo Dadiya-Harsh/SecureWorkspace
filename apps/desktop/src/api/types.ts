@@ -58,9 +58,12 @@ export interface CreateWorkspaceResult {
 
 export interface FileChangeItem {
   relative_path: string;
+  path?: string;
   size_bytes: number;
+  size?: number;
   mtime_epoch: number;
   sha256_hex?: string;
+  status?: string;
 }
 
 export interface StatusChanges {

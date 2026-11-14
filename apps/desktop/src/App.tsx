@@ -421,6 +421,21 @@ export function App() {
     }
   };
 
+  const handleOpenWorkspaceFolder = async () => {
+    if (!workspacePath) return;
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("open_system_path", { path: workspacePath });
+    } catch {
+      try {
+        const { openPath } = await import("@tauri-apps/plugin-opener");
+        await openPath(workspacePath);
+      } catch (e: any) {
+        showToast(`Could not open folder: ${e?.message || String(e)}`, "error");
+      }
+    }
+  };
+
   const handleOpenFile = async (file: WorkspaceFile) => {
     try {
       const res = await api.openFile(file.path);
@@ -564,9 +579,10 @@ export function App() {
   }
 
   const pendingCount =
-    status.changes.new.length +
+    (status.changes.new.length +
     status.changes.modified.length +
-    status.changes.deleted.length;
+    status.changes.deleted.length) ||
+    files.filter((f) => f.status === "not_pushed").length;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-mineral text-ink font-sans">
@@ -601,6 +617,9 @@ export function App() {
           {activeTab === "dashboard" && (
             <DashboardView
               status={status}
+              files={files}
+              workspacePath={workspacePath}
+              onOpenFolder={handleOpenWorkspaceFolder}
               onPush={handleOpenPushModal}
               onBackup={() => setActiveTab("backups")}
             />
@@ -609,6 +628,8 @@ export function App() {
           {activeTab === "files" && (
             <FilesView
               files={files}
+              workspacePath={workspacePath}
+              onOpenFolder={handleOpenWorkspaceFolder}
               onAddFiles={handleAddFiles}
               onOpenFile={handleOpenFile}
               onExportFile={handleExportFile}
