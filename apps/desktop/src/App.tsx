@@ -320,8 +320,13 @@ export function App() {
     try {
       const res = await api.openFile(file.path);
       if (res.success && res.data?.temp_path) {
-        const { openPath } = await import("@tauri-apps/plugin-opener");
-        await openPath(res.data.temp_path);
+        try {
+          const { openPath } = await import("@tauri-apps/plugin-opener");
+          await openPath(res.data.temp_path);
+        } catch {
+          const { invoke } = await import("@tauri-apps/api/core");
+          await invoke("open_system_path", { path: res.data.temp_path });
+        }
       } else {
         showToast(res.message || `Failed to decrypt and open ${file.name}.`, "error");
       }
