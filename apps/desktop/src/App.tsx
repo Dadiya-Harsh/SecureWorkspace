@@ -161,6 +161,25 @@ export function App() {
     return () => clearInterval(timer);
   }, [appState]);
 
+  // Real-time live file & sync tracking: window focus + 3-second auto-poll
+  useEffect(() => {
+    if (appState !== "unlocked") return;
+
+    const onFocus = () => {
+      refreshWorkspaceData();
+    };
+
+    window.addEventListener("focus", onFocus);
+    const pollTimer = setInterval(() => {
+      refreshWorkspaceData();
+    }, 3000);
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      clearInterval(pollTimer);
+    };
+  }, [appState]);
+
   const handleGoogleLogin = async () => {
     setIsAuthLoading(true);
     setAuthMessage("");
@@ -296,15 +315,21 @@ export function App() {
   const handlePull = async () => {
     setIsPulling(true);
     try {
-      const res = await api.pull(true);
+      const res = await api.pull(true, "merge");
       if (res.success) {
         showToast("✓ Remote changes successfully pulled.", "success");
         await refreshWorkspaceData();
+      } else if (res.error_code === "DIVERGED" || res.message?.includes("conflicting file")) {
+        setIsDivergedModalOpen(true);
       } else {
         showToast(res.message || "Pull failed.", "error");
       }
     } catch (err: any) {
-      showToast(`Pull failed: ${err?.message || String(err)}`, "error");
+      if (err?.message?.includes("conflicting file") || err?.message?.includes("DIVERGED")) {
+        setIsDivergedModalOpen(true);
+      } else {
+        showToast(`Pull failed: ${err?.message || String(err)}`, "error");
+      }
     } finally {
       setIsPulling(false);
     }
@@ -312,18 +337,57 @@ export function App() {
 
   const handleDivergedResolution = async (action: string) => {
     setIsDivergedModalOpen(false);
+    setIsPulling(true);
     try {
       if (action === "keep_drive") {
-        await api.pull(true);
+        const res = await api.pull(true, "keep_remote");
+        if (res.success) {
+          showToast("✓ Remote version applied. Local edits saved in safety snapshots.", "success");
+        } else {
+          showToast(res.message || "Resolution failed.", "error");
+        }
       } else if (action === "force_push") {
-        await api.forcePush("Force push resolution", true);
+        const res = await api.forcePush("Force push resolution", true);
+        if (res.success) {
+          showToast("✓ Force pushed local changes to Google Drive.", "success");
+        } else {
+          showToast(res.message || "Force push failed.", "error");
+        }
       } else if (action === "keep_both") {
-        await api.pull(true);
+        const res = await api.pull(true, "keep_both");
+        if (res.success) {
+          showToast("✓ Kept both: conflicting Drive files saved with '(Drive conflict)' suffix.", "success");
+        } else {
+          showToast(res.message || "Resolution failed.", "error");
+        }
       }
-      showToast("✓ Sync conflict resolved.", "success");
       await refreshWorkspaceData();
     } catch (err: any) {
       showToast(`Conflict resolution error: ${err?.message || String(err)}`, "error");
+    } finally {
+      setIsPulling(false);
+    }
+  };
+
+  const handleHardReset = async () => {
+    const ok = window.confirm(
+      "Are you sure you want to discard all local changes and reset to Google Drive?\n\nA safety snapshot of your local unpushed files will be created automatically before resetting."
+    );
+    if (!ok) return;
+
+    setIsPulling(true);
+    try {
+      const res = await api.hardReset(true);
+      if (res.success) {
+        showToast("✓ Workspace reset to remote state. Local changes saved to snapshots.", "success");
+        await refreshWorkspaceData();
+      } else {
+        showToast(res.message || "Hard reset failed.", "error");
+      }
+    } catch (err: any) {
+      showToast(`Hard reset failed: ${err?.message || String(err)}`, "error");
+    } finally {
+      setIsPulling(false);
     }
   };
 
@@ -643,6 +707,25 @@ export function App() {
                     </div>
                   </div>
                 )}
+
+                {/* Hard Reset Option (Git-like reset --hard HEAD with snapshots) */}
+                <div className="pt-4 border-t border-line">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-sm font-semibold text-ink">Reset Workspace to Remote</h4>
+                      <p className="text-xs text-ink-muted">
+                        Discard local unpushed changes and reset to Google Drive. A safety snapshot of all your local edits is created automatically.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleHardReset}
+                      disabled={isPulling}
+                      className="px-3.5 py-1.5 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 text-xs font-semibold transition disabled:opacity-50 flex-shrink-0"
+                    >
+                      Reset to Remote
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -794,6 +877,9 @@ export function App() {
         onPullKeepDrive={() => handleDivergedResolution("keep_drive")}
         onKeepBoth={() => handleDivergedResolution("keep_both")}
         onForcePush={() => handleDivergedResolution("force_push")}
+        driveChangesCount={status.versions_ahead || 1}
+        localChangesCount={status.changes.modified.length + status.changes.new.length}
+        conflictingFiles={status.changes.modified.map((f) => f.relative_path)}
       />
 
       {/* Non-blocking Toast Notification Banner */}

@@ -234,3 +234,40 @@ def test_chaquopy_json_dispatcher_ipc(tmp_path: Path, api: SecureWorkspaceAPI):
     lock_dict = json.loads(lock_call)
     assert lock_dict["success"]
     assert lock_dict["data"]["locked"] is True
+
+
+def test_api_list_files_live_disk_tracking(tmp_path: Path, api: SecureWorkspaceAPI):
+    """
+    Verifies that files created directly on disk (e.g. by user in Explorer)
+    or modified on disk immediately show up in api.list_files().
+    """
+    ws_dir = tmp_path / "live_track_ws"
+    api.workspace_create(str(ws_dir), "Live Track", "Password123#")
+
+    # 1. Create a file directly on disk
+    (ws_dir / "external_drop.txt").write_text("Hello from Explorer", encoding="utf-8")
+
+    # 2. Call list_files
+    files_res = api.list_files()
+    assert files_res["success"]
+    paths = [f["path"] for f in files_res["data"]["files"]]
+    assert "external_drop.txt" in paths
+
+    f_item = next(f for f in files_res["data"]["files"] if f["path"] == "external_drop.txt")
+    assert f_item["sync_status"] == "NEW"
+    assert f_item["size"] == len("Hello from Explorer")
+
+    # 3. Modify the file on disk
+    (ws_dir / "external_drop.txt").write_text("Hello from Explorer - Edited!", encoding="utf-8")
+    files_res2 = api.list_files()
+    f_item2 = next(f for f in files_res2["data"]["files"] if f["path"] == "external_drop.txt")
+    assert f_item2["size"] == len("Hello from Explorer - Edited!")
+
+    # 4. Delete file on disk
+    (ws_dir / "external_drop.txt").unlink()
+    files_res3 = api.list_files()
+    paths3 = [f["path"] for f in files_res3["data"]["files"]]
+    assert "external_drop.txt" not in paths3
+
+    api.workspace_lock()
+

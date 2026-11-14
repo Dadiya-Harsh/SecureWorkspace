@@ -42,6 +42,7 @@ from secureworkspace_core.crypto.recovery import (
 from secureworkspace_core.storage.mock import MockStorageAdapter
 from secureworkspace_core.sync.errors import (
     ConcurrentPushError,
+    DivergedWorkspaceError,
     DriveAheadError,
 )
 from secureworkspace_core.sync.manifest import RemoteManifestManager
@@ -236,12 +237,17 @@ def test_full_end_to_end_sync_lifecycle(tmp_path: Path):
         push_eng1.push(message="Should be refused")
     print("  -> Push safely refused when Drive is ahead (DriveAheadError)")
 
-    # Pull preview shows notes.txt will be saved to safety snapshot
+    # Pull preview shows notes.txt will be saved to safety snapshot and marked as conflict
     prev1_pull = pull_eng1.pull_preview()
     assert "notes.txt" in prev1_pull.files_to_snapshot
+    assert "notes.txt" in prev1_pull.conflicting_files
 
-    # Pull changes: overrides local file but preserves unpushed change in snapshot
-    pull_res1 = pull_eng1.pull(confirm=True)
+    # Merge strategy safely refuses to overwrite conflicting edits
+    with pytest.raises(DivergedWorkspaceError):
+        pull_eng1.pull(confirm=True, strategy="merge")
+
+    # Pull changes with keep_remote: overrides local file but preserves unpushed change in snapshot
+    pull_res1 = pull_eng1.pull(confirm=True, strategy="keep_remote")
     assert pull_res1.pulled_version == 2
     assert pull_res1.snapshots_created >= 1
 

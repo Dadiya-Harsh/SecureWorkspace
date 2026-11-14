@@ -393,7 +393,8 @@ class SecureWorkspaceAPI:
 
     def list_files(self, subpath: str = "") -> Dict[str, Any]:
         """
-        Returns decrypted view of active files from the zero-plaintext SQLite metadata engine.
+        Returns decrypted view of active files from the zero-plaintext SQLite metadata engine,
+        merged in real-time with live on-disk changes.
         """
         try:
             self._require_unlocked()
@@ -401,22 +402,61 @@ class SecureWorkspaceAPI:
             return error_response(APIErrorCode.NOT_UNLOCKED, str(e))
 
         norm_sub = normalize_path(subpath)
-        all_files = self._manager.db.list_files()
-        active = []
-        for f in all_files:
+        all_db_files = {f.path: f for f in self._manager.db.list_files()}
+
+        # Live disk scan
+        detector = ChangeDetector(workspace_root=self._manager.root_path, db=self._manager.db)
+        scan_res = detector.scan(quick=True)
+
+        files_by_path: Dict[str, Dict[str, Any]] = {}
+
+        # 1. Existing DB files that are not deleted
+        for p, f in all_db_files.items():
             if f.sync_status != "DELETED":
-                if not norm_sub or f.path.startswith(norm_sub):
-                    active.append(
-                        {
-                            "file_id": f.file_id,
-                            "path": f.path,
-                            "size": f.size,
-                            "mtime_ms": f.mtime_ms,
-                            "sha256": f.sha256,
-                            "sync_status": f.sync_status,
-                            "updated_at_ms": f.updated_at_ms,
-                        }
-                    )
+                files_by_path[p] = {
+                    "file_id": f.file_id,
+                    "path": f.path,
+                    "size": f.size,
+                    "mtime_ms": f.mtime_ms,
+                    "sha256": f.sha256,
+                    "sync_status": f.sync_status,
+                    "updated_at_ms": f.updated_at_ms,
+                }
+
+        # 2. Mark modified files
+        for mod in scan_res.modified_files:
+            p = normalize_path(mod.path)
+            if p in files_by_path:
+                files_by_path[p]["sync_status"] = "MODIFIED"
+                files_by_path[p]["size"] = mod.size
+                files_by_path[p]["mtime_ms"] = mod.mtime_ms
+                if mod.sha256:
+                    files_by_path[p]["sha256"] = mod.sha256
+
+        # 3. Add new files on disk
+        for new_f in scan_res.new_files:
+            p = normalize_path(new_f.path)
+            files_by_path[p] = {
+                "file_id": new_f.file_id or "",
+                "path": p,
+                "size": new_f.size,
+                "mtime_ms": new_f.mtime_ms,
+                "sha256": new_f.sha256 or "",
+                "sync_status": "NEW",
+                "updated_at_ms": new_f.mtime_ms,
+            }
+
+        # 4. Remove deleted files (deleted on disk)
+        for del_f in scan_res.deleted_files:
+            p = normalize_path(del_f.path)
+            if p in files_by_path:
+                del files_by_path[p]
+
+        # Filter by subpath if specified
+        active = []
+        for p, item in sorted(files_by_path.items(), key=lambda x: x[0]):
+            if not norm_sub or p.startswith(norm_sub):
+                active.append(item)
 
         return success_response(data={"files": active, "count": len(active)})
 
@@ -651,10 +691,11 @@ class SecureWorkspaceAPI:
         except Exception as e:
             return error_response(APIErrorCode.INTERNAL_ERROR, f"Pull preview failed: {e}")
 
-    def pull(self, confirm: bool = True) -> Dict[str, Any]:
+    def pull(self, confirm: bool = True, strategy: str = "merge") -> Dict[str, Any]:
         """
-        Pulls remote HEAD changes:
+        Pulls remote HEAD changes with Git-like non-destructive merging:
         Takes safety snapshots of modified/deleted files, downloads objects, and updates DB.
+        Strategies: 'merge' (default, fails on conflict), 'keep_remote', 'keep_both'.
         """
         try:
             self._require_unlocked()
@@ -664,10 +705,34 @@ class SecureWorkspaceAPI:
             return error_response(code, str(e))
 
         try:
-            res = self._pull_engine.pull(confirm=confirm)
+            res = self._pull_engine.pull(confirm=confirm, strategy=strategy)
             return success_response(data=asdict(res), message=res.message)
+        except DivergedWorkspaceError as e:
+            return error_response(APIErrorCode.DIVERGED, str(e))
         except Exception as e:
             return error_response(APIErrorCode.INTERNAL_ERROR, f"Pull failed: {e}")
+
+    def hard_reset(self, confirm: bool = True) -> Dict[str, Any]:
+        """
+        Hard resets the workspace to remote HEAD:
+        Takes safety snapshots of any local changes, deletes unpushed local files,
+        and cleanly restores remote objects.
+        """
+        try:
+            self._require_unlocked()
+            self._require_storage()
+        except ValueError as e:
+            code = APIErrorCode.NOT_UNLOCKED if "LOCKED" in str(e) else APIErrorCode.STORAGE_NOT_CONNECTED
+            return error_response(code, str(e))
+
+        if not confirm:
+            return error_response(APIErrorCode.INVALID_ARGUMENT, "Explicit confirmation required for hard reset.")
+
+        try:
+            res = self._pull_engine.hard_reset()
+            return success_response(data=asdict(res), message=res.message)
+        except Exception as e:
+            return error_response(APIErrorCode.INTERNAL_ERROR, f"Hard reset failed: {e}")
 
     def push_preview(self) -> Dict[str, Any]:
         """Previews push changes and verifies remote is not ahead."""

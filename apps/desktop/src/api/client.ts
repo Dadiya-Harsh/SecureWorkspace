@@ -167,8 +167,12 @@ class SecureWorkspaceClient {
     return this.dispatch("pull_preview");
   }
 
-  async pull(confirm: boolean = true): Promise<APIResponse<{ pulled_version: number }>> {
-    return this.dispatch("pull", { confirm });
+  async pull(confirm: boolean = true, strategy: string = "merge"): Promise<APIResponse<{ pulled_version: number }>> {
+    return this.dispatch("pull", { confirm, strategy });
+  }
+
+  async hardReset(confirm: boolean = true): Promise<APIResponse<{ pulled_version: number }>> {
+    return this.dispatch("hard_reset", { confirm });
   }
 
   async listRemoteVersions(): Promise<APIResponse<{ versions: RemoteVersion[] }>> {
@@ -276,6 +280,22 @@ class SecureWorkspaceClient {
           id,
           message: "Pushed successfully.",
           data: { new_version: 1, files_uploaded: 0 } as any,
+        };
+
+      case "pull":
+        return {
+          success: true,
+          id,
+          message: "Pulled successfully.",
+          data: { pulled_version: 1 } as any,
+        };
+
+      case "hard_reset":
+        return {
+          success: true,
+          id,
+          message: "Hard reset successfully.",
+          data: { pulled_version: 1 } as any,
         };
 
       case "list_remote_versions":

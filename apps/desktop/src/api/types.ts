@@ -104,12 +104,18 @@ export interface PushPreviewData {
 }
 
 export interface PullPreviewData {
-  base_version: number;
-  target_version: number;
+  base_version?: number;
+  remote_head: number;
+  is_up_to_date: boolean;
+  download_count: number;
+  delete_count: number;
+  snapshot_count: number;
+  conflict_count?: number;
+  has_conflicts?: boolean;
+  conflicting_files?: string[];
   files_to_download: any[];
-  files_to_delete: any[];
-  files_to_snapshot: any[];
-  download_bytes: number;
+  files_to_delete: string[];
+  files_to_snapshot: string[];
 }
 
 export interface VersionManifestEntry {

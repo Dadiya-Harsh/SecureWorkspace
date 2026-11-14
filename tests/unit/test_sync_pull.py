@@ -10,6 +10,7 @@ import nacl.utils
 
 from secureworkspace_core.crypto.keys import derive_meta_key, generate_wmk
 from secureworkspace_core.storage.mock import MockStorageAdapter
+from secureworkspace_core.sync.errors import DivergedWorkspaceError
 from secureworkspace_core.sync.manifest import RemoteManifestManager
 from secureworkspace_core.sync.pull import PullEngine
 from secureworkspace_core.sync.push import PushEngine
@@ -111,11 +112,17 @@ def test_pull_creates_safety_snapshots_for_local_edits(
     push1.push(message="v2")
     assert manifest_mgr1.get_remote_head() == 2
 
-    # Device 2 pulls version 2: should create safety snapshot of unpushed draft!
+    # Device 2 pulls version 2: should detect conflict and snapshot
     prev = pull2.pull_preview()
     assert "notes.txt" in prev.files_to_snapshot
+    assert "notes.txt" in prev.conflicting_files
 
-    res = pull2.pull(confirm=True)
+    # Merge strategy should raise DivergedWorkspaceError on conflict
+    with pytest.raises(DivergedWorkspaceError):
+        pull2.pull(confirm=True, strategy="merge")
+
+    # Keep remote strategy resolves conflict by applying remote and creating snapshot
+    res = pull2.pull(confirm=True, strategy="keep_remote")
     assert res.pulled_version == 2
     assert res.snapshots_created >= 1
 
@@ -177,3 +184,142 @@ def test_pull_handles_remote_deletions(
 
     mgr1.close()
     mgr2.close()
+
+
+def test_git_like_pull_preserves_unpushed_local_files(
+    tmp_path: Path, wmk: bytes, shared_storage: MockStorageAdapter
+):
+    """
+    Verifies that a pull does NOT delete unpushed local files.
+    Remote additions are downloaded and applied on top of local work.
+    """
+    meta_key = derive_meta_key(wmk)
+
+    dev1_dir = tmp_path / "dev1"
+    mgr1 = WorkspaceManager(dev1_dir, meta_key=meta_key)
+    mgr1.init_workspace()
+    manifest_mgr1 = RemoteManifestManager(shared_storage, wmk)
+    push1 = PushEngine(mgr1, manifest_mgr1)
+
+    (dev1_dir / "shared_doc.txt").write_text("Version 1 base", encoding="utf-8")
+    push1.push(message="v1")
+
+    dev2_dir = tmp_path / "dev2"
+    mgr2 = WorkspaceManager(dev2_dir, meta_key=meta_key)
+    mgr2.init_workspace()
+    manifest_mgr2 = RemoteManifestManager(shared_storage, wmk)
+    pull2 = PullEngine(mgr2, manifest_mgr2)
+    pull2.pull(confirm=True)
+
+    # Device 2 adds a local unpushed file
+    local_unpushed = dev2_dir / "my_local_work.docx"
+    local_unpushed.write_bytes(b"Important local docx binary data")
+
+    # Device 1 adds another file and pushes v2
+    (dev1_dir / "server_announcement.pdf").write_bytes(b"PDF bytes")
+    push1.push(message="v2 with server_announcement")
+    assert manifest_mgr1.get_remote_head() == 2
+
+    # Device 2 pulls v2
+    prev2 = pull2.pull_preview()
+    assert "my_local_work.docx" not in prev2.files_to_delete
+    assert len(prev2.conflicting_files) == 0
+
+    res = pull2.pull(confirm=True, strategy="merge")
+    assert res.pulled_version == 2
+    assert res.files_downloaded == 1
+
+    # VERIFY: Device 2's unpushed file is PRESERVED!
+    assert local_unpushed.is_file()
+    assert local_unpushed.read_bytes() == b"Important local docx binary data"
+    assert (dev2_dir / "server_announcement.pdf").read_bytes() == b"PDF bytes"
+
+    mgr1.close()
+    mgr2.close()
+
+
+def test_pull_conflict_keep_both(
+    tmp_path: Path, wmk: bytes, shared_storage: MockStorageAdapter
+):
+    """
+    Verifies that 'keep_both' saves the incoming remote file with '(Drive conflict)' suffix.
+    """
+    meta_key = derive_meta_key(wmk)
+
+    dev1_dir = tmp_path / "dev1"
+    mgr1 = WorkspaceManager(dev1_dir, meta_key=meta_key)
+    mgr1.init_workspace()
+    manifest_mgr1 = RemoteManifestManager(shared_storage, wmk)
+    push1 = PushEngine(mgr1, manifest_mgr1)
+
+    (dev1_dir / "code.py").write_text("print('v1')", encoding="utf-8")
+    push1.push(message="v1")
+
+    dev2_dir = tmp_path / "dev2"
+    mgr2 = WorkspaceManager(dev2_dir, meta_key=meta_key)
+    mgr2.init_workspace()
+    manifest_mgr2 = RemoteManifestManager(shared_storage, wmk)
+    pull2 = PullEngine(mgr2, manifest_mgr2)
+    pull2.pull(confirm=True)
+
+    # Both devices edit code.py
+    (dev2_dir / "code.py").write_text("print('dev2 local changes')", encoding="utf-8")
+    (dev1_dir / "code.py").write_text("print('dev1 remote changes')", encoding="utf-8")
+    push1.push(message="v2 dev1")
+
+    # Device 2 pulls with keep_both
+    res = pull2.pull(confirm=True, strategy="keep_both")
+    assert res.pulled_version == 2
+
+    # Local file is untouched
+    assert (dev2_dir / "code.py").read_text(encoding="utf-8") == "print('dev2 local changes')"
+
+    # Drive conflict copy is created
+    conflict_file = dev2_dir / "code (Drive conflict).py"
+    assert conflict_file.is_file()
+    assert conflict_file.read_text(encoding="utf-8") == "print('dev1 remote changes')"
+
+    mgr1.close()
+    mgr2.close()
+
+
+def test_hard_reset(
+    tmp_path: Path, wmk: bytes, shared_storage: MockStorageAdapter
+):
+    """
+    Verifies that hard_reset cleanly resets working copy to remote HEAD.
+    """
+    meta_key = derive_meta_key(wmk)
+
+    dev1_dir = tmp_path / "dev1"
+    mgr1 = WorkspaceManager(dev1_dir, meta_key=meta_key)
+    mgr1.init_workspace()
+    manifest_mgr1 = RemoteManifestManager(shared_storage, wmk)
+    push1 = PushEngine(mgr1, manifest_mgr1)
+
+    (dev1_dir / "doc.txt").write_text("Remote doc content", encoding="utf-8")
+    push1.push(message="v1")
+
+    dev2_dir = tmp_path / "dev2"
+    mgr2 = WorkspaceManager(dev2_dir, meta_key=meta_key)
+    mgr2.init_workspace()
+    manifest_mgr2 = RemoteManifestManager(shared_storage, wmk)
+    pull2 = PullEngine(mgr2, manifest_mgr2)
+    pull2.pull(confirm=True)
+
+    # Device 2 has dirty local state: modifies doc.txt, adds stray.txt
+    (dev2_dir / "doc.txt").write_text("Dirty local edit", encoding="utf-8")
+    (dev2_dir / "stray.txt").write_text("Extra unpushed file", encoding="utf-8")
+
+    # Hard reset
+    res = pull2.hard_reset()
+    assert res.pulled_version == 1
+    assert res.snapshots_created >= 2  # doc.txt and stray.txt snapshotted
+
+    # Verify stray.txt is gone and doc.txt is restored
+    assert not (dev2_dir / "stray.txt").exists()
+    assert (dev2_dir / "doc.txt").read_text(encoding="utf-8") == "Remote doc content"
+
+    mgr1.close()
+    mgr2.close()
+
