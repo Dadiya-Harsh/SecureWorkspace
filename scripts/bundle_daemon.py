@@ -29,6 +29,7 @@ def main():
         str(pyinstaller),
         "--noconfirm",
         "--onefile",
+        "--noconsole",
         "--clean",
         "--name", "secureworkspace-daemon",
         "--paths", str(core_dir),

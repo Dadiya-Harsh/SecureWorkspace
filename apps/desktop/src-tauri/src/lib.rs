@@ -22,9 +22,12 @@ fn dispatch_daemon(request: Value, state: State<'_, AppState>) -> Result<Value, 
 fn open_system_path(path: String) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
         use std::process::Command;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
         Command::new("cmd")
             .args(["/C", "start", "", &path])
+            .creation_flags(CREATE_NO_WINDOW)
             .spawn()
             .map_err(|e| format!("Failed to open file: {}", e))?;
         Ok(())

@@ -34,12 +34,21 @@ impl DaemonManager {
 
         let (cmd_bin, args, cwd) = Self::resolve_daemon_command()?;
 
-        let mut child = Command::new(&cmd_bin)
-            .args(&args)
+        let mut cmd = Command::new(&cmd_bin);
+        cmd.args(&args)
             .current_dir(&cwd)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
+            .stderr(Stdio::null());
+
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
+        }
+
+        let mut child = cmd
             .spawn()
             .map_err(|e| format!("Failed to spawn daemon process '{:?}': {}", cmd_bin, e))?;
 

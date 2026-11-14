@@ -212,7 +212,7 @@ class SecureWorkspaceClient {
   }
 
   // --- Browser Dev Mock Provider ---
-  private async devMockDispatch<T>(method: string, params: Record<string, any>, id: string): Promise<APIResponse<T>> {
+  private async devMockDispatch<T>(method: string, _params: Record<string, any>, id: string): Promise<APIResponse<T>> {
     await new Promise((r) => setTimeout(r, 120));
 
     switch (method) {
@@ -326,6 +326,14 @@ class SecureWorkspaceClient {
           } as any,
         };
 
+      case "workspace_unlock":
+        return {
+          success: false,
+          error_code: "WRONG_PASSWORD",
+          message: "Incorrect master password or recovery phrase.",
+          id,
+        };
+
       case "google_auth_logout":
         return {
           success: true,
@@ -334,7 +342,12 @@ class SecureWorkspaceClient {
         };
 
       default:
-        return { success: true, id, data: { mock: true, method, params } as any };
+        return {
+          success: false,
+          error_code: "NOT_SUPPORTED",
+          message: `Method ${method} is not supported in mock mode.`,
+          id,
+        };
     }
   }
 }

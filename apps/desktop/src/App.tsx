@@ -213,15 +213,14 @@ export function App() {
         await refreshWorkspaceData();
         return true;
       }
-    } catch {}
-
-    // Dev preview fallback
-    if (token.length >= 6) {
-      setAppState("unlocked");
-      setCountdownSeconds(15 * 60);
-      return true;
+      if (res.message) {
+        showToast(res.message, "error");
+      }
+      return false;
+    } catch (err: any) {
+      showToast(err?.message || "Unlock failed. Could not communicate with security daemon.", "error");
+      return false;
     }
-    return false;
   };
 
   // Multi-Workspace Handlers
