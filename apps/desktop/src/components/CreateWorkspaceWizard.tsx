@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Loader2,
   AlertCircle,
+  FolderOpen,
 } from "lucide-react";
 import { api } from "../api/client";
 
@@ -24,7 +25,7 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [name, setName] = useState("Personal");
-  const [workspacePath, setWorkspacePath] = useState("D:/SecureWorkspaces/Personal");
+  const [workspacePath, setWorkspacePath] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [stepError, setStepError] = useState("");
@@ -307,44 +308,77 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
                 </p>
               </div>
 
-              <div className="space-y-4">
+              {stepError && (
+                <div className="p-3.5 rounded-xl bg-danger/10 border border-danger/30 text-xs text-danger flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{stepError}</span>
+                </div>
+              )}
+
+              <div className="space-y-5">
                 <div>
                   <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
-                    Workspace Name
+                    Workspace Nickname
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Personal, Confidential, Taxes"
                     className="w-full py-2.5 px-3.5 rounded-xl border border-line bg-surface text-ink text-sm focus:outline-none focus:border-vault-green"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">
-                    Folder Location
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={workspacePath}
-                      onChange={(e) => setWorkspacePath(e.target.value)}
-                      className="flex-1 py-2.5 px-3.5 rounded-xl border border-line bg-surface text-ink text-sm font-mono focus:outline-none focus:border-vault-green"
-                    />
+                <div className="p-4 rounded-xl border border-vault-mint/30 bg-vault-mint/5 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <div className="text-sm font-bold text-ink">Vault Folder Location</div>
+                      <div className="text-xs text-ink-muted mt-0.5">
+                        Select an empty folder where your encrypted files will live on this PC.
+                      </div>
+                    </div>
                     <button
                       type="button"
                       onClick={handleBrowseFolder}
-                      className="px-4 py-2.5 rounded-xl border border-line text-xs font-semibold text-ink hover:bg-mineral transition"
+                      className="px-4 py-2 rounded-xl bg-vault-green text-white text-xs font-semibold hover:bg-vault-hover transition shadow-sm flex items-center gap-1.5 flex-shrink-0 self-start sm:self-auto"
                     >
-                      Browse...
+                      <FolderOpen className="w-4 h-4" />
+                      {workspacePath ? "Change Folder..." : "Select Folder..."}
                     </button>
+                  </div>
+
+                  {workspacePath ? (
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-surface border border-line text-xs font-mono text-ink truncate">
+                      <span className="text-vault-green font-bold flex-shrink-0">Selected:</span>
+                      <span className="truncate">{workspacePath}</span>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-ink-muted/80 italic p-2 bg-surface/60 rounded-lg border border-line/60">
+                      No folder selected yet. Click "Select Folder..." to choose where to store your vault.
+                    </div>
+                  )}
+
+                  <div className="text-[11px] text-ink-muted/70 flex items-start gap-1.5 pt-1">
+                    <span className="text-vault-mint font-bold flex-shrink-0">Tip:</span>
+                    <span>You can choose any folder in Documents, Desktop, or on an external drive. SecureWorkspace will store its cryptographic header here.</span>
                   </div>
                 </div>
               </div>
 
               <div className="pt-4 flex justify-end">
                 <button
-                  onClick={() => setCurrentStep(2)}
+                  onClick={() => {
+                    if (!name.trim()) {
+                      setStepError("Please provide a name for this workspace.");
+                      return;
+                    }
+                    if (!workspacePath.trim()) {
+                      setStepError("Please select a folder location for your vault.");
+                      return;
+                    }
+                    setStepError("");
+                    setCurrentStep(2);
+                  }}
                   disabled={!name.trim() || !workspacePath.trim()}
                   className="py-2.5 px-6 rounded-xl text-sm font-medium bg-vault-green text-white hover:bg-vault-hover transition shadow-sm disabled:opacity-50 flex items-center gap-2"
                 >

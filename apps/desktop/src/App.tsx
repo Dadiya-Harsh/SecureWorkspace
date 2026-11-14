@@ -11,19 +11,22 @@ import { PushPreviewModal } from "./components/PushPreviewModal";
 import { DivergedModal } from "./components/DivergedModal";
 import { UnlockView } from "./components/UnlockView";
 import { CreateWorkspaceWizard } from "./components/CreateWorkspaceWizard";
+import { WelcomeOnboardingView } from "./components/WelcomeOnboardingView";
 import { api } from "./api/client";
 import { SyncStatusData, WorkspaceFile, RegisteredWorkspace } from "./api/types";
 
 export function App() {
-  const [appState, setAppState] = useState<"unlocked" | "locked" | "wizard">("unlocked");
+  const [appState, setAppState] = useState<"loading" | "unlocked" | "locked" | "wizard" | "welcome">("loading");
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
   const [isDivergedModalOpen, setIsDivergedModalOpen] = useState(false);
   const [isPushModalOpen, setIsPushModalOpen] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(14 * 60 + 52); // 14:52
 
-  const [accountName, setAccountName] = useState("Personal");
+  const [accountName, setAccountName] = useState(() => {
+    return localStorage.getItem("sw_workspace_name") || "Vault";
+  });
   const [workspacePath, setWorkspacePath] = useState(() => {
-    return localStorage.getItem("sw_workspace_path") || "D:/SecureWorkspaces/Personal";
+    return localStorage.getItem("sw_workspace_path") || "";
   });
 
   // Persistent registry of all known workspaces on this device
@@ -32,9 +35,7 @@ export function App() {
       const saved = localStorage.getItem("sw_registered_workspaces");
       if (saved) return JSON.parse(saved);
     } catch {}
-    return [
-      { id: "ws-1", name: "Personal", path: "D:/SecureWorkspaces/Personal", lastOpened: Date.now() },
-    ];
+    return [];
   });
 
   useEffect(() => {
@@ -103,16 +104,30 @@ export function App() {
           }
           await refreshWorkspaceData();
         } else {
-          const savedPath = localStorage.getItem("sw_workspace_path");
-          if (!savedPath) {
-            setAppState("wizard");
+          // Check registered workspaces
+          const savedWorkspaces = localStorage.getItem("sw_registered_workspaces");
+          let parsed: RegisteredWorkspace[] = [];
+          try {
+            if (savedWorkspaces) parsed = JSON.parse(savedWorkspaces);
+          } catch {}
+
+          if (parsed.length === 0) {
+            setAppState("welcome");
           } else {
+            const activePath = localStorage.getItem("sw_workspace_path");
+            const activeWs = parsed.find((w) => w.path === activePath) || parsed[0];
+            setWorkspacePath(activeWs.path);
+            setAccountName(activeWs.name);
             setAppState("locked");
           }
         }
       } catch {
-        const savedPath = localStorage.getItem("sw_workspace_path");
-        setAppState(savedPath ? "locked" : "wizard");
+        const savedWorkspaces = localStorage.getItem("sw_registered_workspaces");
+        let parsed: RegisteredWorkspace[] = [];
+        try {
+          if (savedWorkspaces) parsed = JSON.parse(savedWorkspaces);
+        } catch {}
+        setAppState(parsed.length === 0 ? "welcome" : "locked");
       }
 
       try {
@@ -400,13 +415,50 @@ export function App() {
     setActiveTab("history");
   };
 
+  // Render State: Loading Enclave Splash
+  if (appState === "loading") {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-rail text-white select-none">
+        <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-200">
+          <img
+            src="/logo.png"
+            alt="SecureWorkspace"
+            className="w-16 h-16 rounded-2xl shadow-xl shadow-cyan-950/60 border border-vault-cyan/40 object-cover"
+          />
+          <div className="text-lg font-bold tracking-tight">SecureWorkspace</div>
+          <div className="flex items-center gap-2 text-xs text-ink-light/60">
+            <span className="w-2 h-2 rounded-full bg-vault-mint animate-pulse" />
+            Initializing secure enclave...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Render State: First-Time Onboarding Welcome
+  if (appState === "welcome") {
+    return (
+      <WelcomeOnboardingView
+        onCreateWorkspace={() => setAppState("wizard")}
+        onOpenExistingWorkspace={handleOpenExistingWorkspace}
+      />
+    );
+  }
+
   // Render State: Wizard
   if (appState === "wizard") {
     return (
       <CreateWorkspaceWizard
-        onCancel={() => setAppState("locked")}
+        onCancel={() => {
+          if (registeredWorkspaces.length > 0) {
+            setAppState("locked");
+          } else {
+            setAppState("welcome");
+          }
+        }}
         onComplete={(path, name) => {
           localStorage.setItem("sw_workspace_path", path);
+          localStorage.setItem("sw_workspace_name", name);
           setWorkspacePath(path);
           setAccountName(name);
 
@@ -424,6 +476,7 @@ export function App() {
 
           setAppState("unlocked");
           setCountdownSeconds(15 * 60);
+          showToast(`Workspace '${name}' created and ready!`, "success");
           refreshWorkspaceData();
         }}
       />
