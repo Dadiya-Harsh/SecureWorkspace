@@ -35,6 +35,13 @@ export interface APIResponse<T = any> {
   id?: string | number;
 }
 
+export interface RegisteredWorkspace {
+  id: string;
+  name: string;
+  path: string;
+  lastOpened: number;
+}
+
 export interface WorkspaceSummary {
   workspace_id?: string;
   name?: string;

@@ -55,7 +55,38 @@ impl DaemonManager {
     }
 
     fn resolve_daemon_command() -> Result<(PathBuf, Vec<String>, PathBuf), String> {
-        // 1. In dev, use the project virtual environment
+        // 1. Production / bundled sidecar executable
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(parent) = exe_path.parent() {
+                // Check alongside exe
+                let candidates = [
+                    parent.join("secureworkspace-daemon.exe"),
+                    parent.join("bin").join("secureworkspace-daemon.exe"),
+                    parent.join("resources").join("bin").join("secureworkspace-daemon.exe"),
+                    parent.join("resources").join("secureworkspace-daemon.exe"),
+                ];
+                for candidate in candidates {
+                    if candidate.exists() {
+                        return Ok((candidate, vec![], parent.to_path_buf()));
+                    }
+                }
+            }
+        }
+
+        // 2. Custom environment override for testing or dev
+        if let Ok(dev_python) = std::env::var("SECUREWORKSPACE_PYTHON") {
+            let p = PathBuf::from(dev_python);
+            if p.exists() {
+                let core_dir = PathBuf::from(r"D:\Projects\SecureWorkspace\core");
+                return Ok((
+                    p,
+                    vec!["-m".to_string(), "secureworkspace_core.daemon".to_string()],
+                    core_dir,
+                ));
+            }
+        }
+
+        // 3. Known project virtual environment (dev mode)
         let venv_python = PathBuf::from(r"D:\Projects\SecureWorkspace\.venv\Scripts\python.exe");
         let core_dir = PathBuf::from(r"D:\Projects\SecureWorkspace\core");
 
@@ -67,17 +98,7 @@ impl DaemonManager {
             ));
         }
 
-        // 2. Production fallback: bundled sidecar executable
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(parent) = exe_path.parent() {
-                let bundled_daemon = parent.join("secureworkspace-daemon.exe");
-                if bundled_daemon.exists() {
-                    return Ok((bundled_daemon, vec![], parent.to_path_buf()));
-                }
-            }
-        }
-
-        // 3. Fallback to system python
+        // 4. Fallback to system python
         Ok((
             PathBuf::from("python"),
             vec!["-m".to_string(), "secureworkspace_core.daemon".to_string()],

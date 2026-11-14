@@ -6,12 +6,13 @@ import { DashboardView } from "./components/DashboardView";
 import { FilesView } from "./components/FilesView";
 import { HistoryView } from "./components/HistoryView";
 import { BackupsView } from "./components/BackupsView";
+import { WorkspacesView } from "./components/WorkspacesView";
 import { PushPreviewModal } from "./components/PushPreviewModal";
 import { DivergedModal } from "./components/DivergedModal";
 import { UnlockView } from "./components/UnlockView";
 import { CreateWorkspaceWizard } from "./components/CreateWorkspaceWizard";
 import { api } from "./api/client";
-import { SyncStatusData, WorkspaceFile } from "./api/types";
+import { SyncStatusData, WorkspaceFile, RegisteredWorkspace } from "./api/types";
 
 export function App() {
   const [appState, setAppState] = useState<"unlocked" | "locked" | "wizard">("unlocked");
@@ -24,6 +25,22 @@ export function App() {
   const [workspacePath, setWorkspacePath] = useState(() => {
     return localStorage.getItem("sw_workspace_path") || "D:/SecureWorkspaces/Personal";
   });
+
+  // Persistent registry of all known workspaces on this device
+  const [registeredWorkspaces, setRegisteredWorkspaces] = useState<RegisteredWorkspace[]>(() => {
+    try {
+      const saved = localStorage.getItem("sw_registered_workspaces");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      { id: "ws-1", name: "Personal", path: "D:/SecureWorkspaces/Personal", lastOpened: Date.now() },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("sw_registered_workspaces", JSON.stringify(registeredWorkspaces));
+  }, [registeredWorkspaces]);
+
   const [accountEmail, setAccountEmail] = useState<string>("name@gmail.com");
   const [isDriveAuthed, setIsDriveAuthed] = useState<boolean>(false);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(false);
@@ -234,6 +251,12 @@ export function App() {
         setAppState("unlocked");
         if (res.data.name) setAccountName(res.data.name);
         setCountdownSeconds(15 * 60);
+
+        // Update lastOpened in registry
+        setRegisteredWorkspaces((prev) =>
+          prev.map((w) => (w.path === workspacePath ? { ...w, lastOpened: Date.now() } : w))
+        );
+
         await refreshWorkspaceData();
         return true;
       }
@@ -246,6 +269,57 @@ export function App() {
       return true;
     }
     return false;
+  };
+
+  // Multi-Workspace Handlers
+  const handleSelectWorkspace = async (ws: RegisteredWorkspace) => {
+    await api.lock();
+    setWorkspacePath(ws.path);
+    setAccountName(ws.name);
+    localStorage.setItem("sw_workspace_path", ws.path);
+
+    setRegisteredWorkspaces((prev) =>
+      prev.map((w) => (w.path === ws.path ? { ...w, lastOpened: Date.now() } : w))
+    );
+
+    setAppState("locked");
+    showToast(`Switched target vault to: ${ws.name}`, "info");
+  };
+
+  const handleOpenExistingWorkspace = async () => {
+    try {
+      const { open } = await import("@tauri-apps/plugin-dialog");
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: "Select Existing SecureWorkspace Folder",
+      });
+
+      if (selected && typeof selected === "string") {
+        const folderName = selected.split(/[/\\]/).pop() || "Vault";
+        const newWs: RegisteredWorkspace = {
+          id: `ws-${Date.now()}`,
+          name: folderName,
+          path: selected,
+          lastOpened: Date.now(),
+        };
+
+        // Add to registry if not already present
+        setRegisteredWorkspaces((prev) => {
+          const exists = prev.some((w) => w.path === selected);
+          return exists ? prev : [newWs, ...prev];
+        });
+
+        await handleSelectWorkspace(newWs);
+      }
+    } catch (err: any) {
+      showToast(`Error opening folder: ${err?.message || String(err)}`, "error");
+    }
+  };
+
+  const handleRemoveWorkspace = (ws: RegisteredWorkspace) => {
+    setRegisteredWorkspaces((prev) => prev.filter((w) => w.path !== ws.path));
+    showToast(`Removed '${ws.name}' from workspaces list.`, "info");
   };
 
   const handleOpenPushModal = () => {
@@ -383,6 +457,19 @@ export function App() {
           localStorage.setItem("sw_workspace_path", path);
           setWorkspacePath(path);
           setAccountName(name);
+
+          // Register in persistent list
+          const newWs: RegisteredWorkspace = {
+            id: `ws-${Date.now()}`,
+            name,
+            path,
+            lastOpened: Date.now(),
+          };
+          setRegisteredWorkspaces((prev) => {
+            const filtered = prev.filter((w) => w.path !== path);
+            return [newWs, ...filtered];
+          });
+
           setAppState("unlocked");
           setCountdownSeconds(15 * 60);
           refreshWorkspaceData();
@@ -398,8 +485,11 @@ export function App() {
         workspaceName={accountName}
         accountEmail={accountEmail}
         version={status.base_version}
+        registeredWorkspaces={registeredWorkspaces}
         onUnlock={handleUnlock}
         onCreateNewWorkspace={() => setAppState("wizard")}
+        onSelectWorkspace={handleSelectWorkspace}
+        onOpenExistingWorkspace={handleOpenExistingWorkspace}
       />
     );
   }
@@ -411,12 +501,17 @@ export function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-mineral text-ink font-sans">
-      {/* Dark Navigation Sidebar */}
+      {/* Dark Navigation Sidebar with Workspace Switcher */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onLock={handleLock}
         lockCountdown={formatCountdown(countdownSeconds)}
+        activeWorkspaceName={accountName}
+        registeredWorkspaces={registeredWorkspaces}
+        onSelectWorkspace={handleSelectWorkspace}
+        onCreateWorkspace={() => setAppState("wizard")}
+        onOpenExistingWorkspace={handleOpenExistingWorkspace}
       />
 
       {/* Main App Canvas */}
@@ -558,6 +653,18 @@ export function App() {
             <BackupsView
               workspaceName={accountName}
               version={status.base_version}
+            />
+          )}
+
+          {activeTab === "workspaces" && (
+            <WorkspacesView
+              workspaces={registeredWorkspaces}
+              activeWorkspaceName={accountName}
+              onSelectWorkspace={handleSelectWorkspace}
+              onCreateWorkspace={() => setAppState("wizard")}
+              onOpenExistingWorkspace={handleOpenExistingWorkspace}
+              onLockActiveWorkspace={handleLock}
+              onRemoveWorkspace={handleRemoveWorkspace}
             />
           )}
 

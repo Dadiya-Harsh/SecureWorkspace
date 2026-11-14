@@ -1,26 +1,34 @@
 import React, { useState } from "react";
-import { Lock, ShieldCheck } from "lucide-react";
+import { Lock, ShieldCheck, ChevronDown, FolderOpen, Plus } from "lucide-react";
+import { RegisteredWorkspace } from "../api/types";
 
 interface UnlockViewProps {
   workspaceName: string;
   accountEmail: string;
   version: number;
+  registeredWorkspaces?: RegisteredWorkspace[];
   onUnlock: (passwordOrRecoveryKey: string) => Promise<boolean>;
   onCreateNewWorkspace: () => void;
+  onSelectWorkspace?: (ws: RegisteredWorkspace) => void;
+  onOpenExistingWorkspace?: () => void;
 }
 
 export const UnlockView: React.FC<UnlockViewProps> = ({
   workspaceName,
   accountEmail,
   version,
+  registeredWorkspaces = [],
   onUnlock,
   onCreateNewWorkspace,
+  onSelectWorkspace,
+  onOpenExistingWorkspace,
 }) => {
   const [password, setPassword] = useState("");
   const [useRecoveryKey, setUseRecoveryKey] = useState(false);
   const [recoveryPhrase, setRecoveryPhrase] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSwitchingWorkspace, setIsSwitchingWorkspace] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,17 +87,56 @@ export const UnlockView: React.FC<UnlockViewProps> = ({
       {/* Right Unlock Form Panel */}
       <div className="flex-1 bg-surface flex flex-col justify-center items-center p-8">
         <div className="w-full max-w-md space-y-8 bg-surface-card p-10 rounded-2xl border border-line shadow-sm">
-          {/* Header */}
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-wider text-ink-muted mb-1">
-              Encrypted Workspace
+          {/* Header & Workspace Switcher Trigger */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                Encrypted Workspace
+              </span>
+              {registeredWorkspaces.length > 1 && onSelectWorkspace && (
+                <button
+                  type="button"
+                  onClick={() => setIsSwitchingWorkspace(!isSwitchingWorkspace)}
+                  className="text-xs font-semibold text-vault-green hover:underline flex items-center gap-1"
+                >
+                  Switch Vault <ChevronDown className="w-3 h-3" />
+                </button>
+              )}
             </div>
+
             <h2 className="text-2xl font-bold text-ink">
               Unlock {workspaceName}
             </h2>
-            <p className="text-xs text-ink-muted mt-1">
+            <p className="text-xs text-ink-muted">
               Connected as {accountEmail}
             </p>
+
+            {/* Switcher selector dropdown */}
+            {isSwitchingWorkspace && registeredWorkspaces.length > 0 && (
+              <div className="mt-3 p-2 bg-mineral/50 border border-line rounded-xl space-y-1 animate-in fade-in zoom-in-95">
+                <div className="text-[10px] font-bold uppercase text-ink-muted px-2 py-1">
+                  Select a Workspace to Unlock
+                </div>
+                {registeredWorkspaces.map((ws) => (
+                  <button
+                    key={ws.path}
+                    type="button"
+                    onClick={() => {
+                      setIsSwitchingWorkspace(false);
+                      if (onSelectWorkspace) onSelectWorkspace(ws);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition ${
+                      ws.name === workspaceName
+                        ? "bg-vault-green text-white font-bold"
+                        : "hover:bg-mineral text-ink"
+                    }`}
+                  >
+                    <div className="truncate">{ws.name}</div>
+                    <div className="text-[10px] opacity-75 font-mono truncate">{ws.path}</div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {errorMsg && (
@@ -138,11 +185,11 @@ export const UnlockView: React.FC<UnlockViewProps> = ({
               className="w-full py-2.5 px-4 rounded-xl text-sm font-medium bg-vault-green text-white hover:bg-vault-hover transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Lock className="w-4 h-4" />
-              {isLoading ? "Deriving keys..." : "Unlock"}
+              {isLoading ? "Deriving keys with Argon2id..." : "Unlock"}
             </button>
           </form>
 
-          {/* Alternate Recovery Link */}
+          {/* Alternate Recovery Link & Actions */}
           <div className="pt-2 text-center text-xs space-y-3">
             <button
               type="button"
@@ -155,14 +202,24 @@ export const UnlockView: React.FC<UnlockViewProps> = ({
               {useRecoveryKey ? "Use password instead" : "Use recovery key instead"}
             </button>
 
-            <div className="pt-4 border-t border-line text-ink-muted">
-              Need a new workspace?{" "}
+            <div className="pt-4 border-t border-line flex items-center justify-between text-ink-muted">
               <button
+                type="button"
                 onClick={onCreateNewWorkspace}
-                className="text-vault-green hover:underline font-medium"
+                className="text-vault-green hover:underline font-medium flex items-center gap-1"
               >
-                Create workspace
+                <Plus className="w-3.5 h-3.5" /> New workspace
               </button>
+
+              {onOpenExistingWorkspace && (
+                <button
+                  type="button"
+                  onClick={onOpenExistingWorkspace}
+                  className="text-ink-muted hover:text-ink hover:underline font-medium flex items-center gap-1"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" /> Open folder
+                </button>
+              )}
             </div>
           </div>
         </div>
