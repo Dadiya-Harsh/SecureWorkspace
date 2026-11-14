@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 def main():
@@ -25,6 +26,15 @@ def main():
         sys.exit(1)
 
     print("=== Building standalone SecureWorkspace daemon ===")
+    temp_build_root = Path(tempfile.gettempdir()) / "secureworkspace_daemon_bundle"
+    if temp_build_root.exists():
+        shutil.rmtree(temp_build_root, ignore_errors=True)
+    temp_build_root.mkdir(parents=True, exist_ok=True)
+
+    dist_dir = temp_build_root / "dist"
+    work_dir = temp_build_root / "work"
+    spec_dir = temp_build_root / "spec"
+
     cmd = [
         str(pyinstaller),
         "--noconfirm",
@@ -32,6 +42,9 @@ def main():
         "--noconsole",
         "--clean",
         "--name", "secureworkspace-daemon",
+        "--distpath", str(dist_dir),
+        "--workpath", str(work_dir),
+        "--specpath", str(spec_dir),
         "--paths", str(core_dir),
         "--hidden-import", "secureworkspace_core",
         "--hidden-import", "nacl",
@@ -50,7 +63,7 @@ def main():
         print("PyInstaller build failed!")
         sys.exit(result.returncode)
 
-    built_exe = repo_root / "dist" / "secureworkspace-daemon.exe"
+    built_exe = dist_dir / "secureworkspace-daemon.exe"
     if not built_exe.exists():
         print(f"Error: Expected binary not found at {built_exe}")
         sys.exit(1)
@@ -66,6 +79,9 @@ def main():
     print(f"Successfully bundled daemon ({size_mb:.2f} MB):")
     print(f"  -> {dest_plain}")
     print(f"  -> {dest_triple}")
+
+    # Clean up temp
+    shutil.rmtree(temp_build_root, ignore_errors=True)
 
 if __name__ == "__main__":
     main()
