@@ -42,6 +42,7 @@ Thumbs.db
 # Documentation & handoff scratchpads
 docs/
 NEXT_CHAT_PROMPT.txt
+scripts/parse_*.py
 
 # Sidecar binaries & build specs
 apps/desktop/src-tauri/bin/

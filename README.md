@@ -3,7 +3,8 @@
 Open-source, client-side encrypted backup and sync. Files are encrypted on your device before upload, so Google Drive only ever stores ciphertext. You keep the keys, the storage account, the version history and the recovery material.
 
 > **Status: Phase 5 Desktop App & Google OAuth Integration Complete.**  
-> **100/100 tests passing** across unit, crypto vectors, daemon IPC, live Drive integration, and Rust Tauri bridge.  
+> **101/101 unit & crypto vector tests passing** across unit, crypto vectors, daemon IPC, and Rust Tauri bridge.  
+> **Currently Active: Phase 6 Web App & Zero-Server Read-Only Viewer.**  
 > Not yet independently security-reviewed. Do not put real personal documents in it yet.
 
 ---
@@ -22,6 +23,7 @@ Open-source, client-side encrypted backup and sync. Files are encrypted on your 
   - **`restore_file_version()`:** Granular single-file historical recovery with pre-restore safety snapshots.
 - **Storage Independence & Least Privilege:** Google Drive adapter uses `drive.file` scope restricted strictly to a dedicated app folder with automated boundary checks.
 - **Integrated Desktop Google OAuth:** Direct browser consent flow with silent token auto-refresh and persistent local credential storage.
+- **Zero-Server Web App & In-Browser Viewer:** Unlock and view documents in any web browser without installing the desktop app. Argon2id KDF and chunk decryption execute client-side via WebAssembly in a Web Worker; rich document renderers display PDF, Excel, Word, CSV, Markdown, and Code directly in RAM.
 
 ---
 
@@ -31,6 +33,7 @@ Open-source, client-side encrypted backup and sync. Files are encrypted on your 
 - **Unified Public JSON API Facade:** Single dispatch point (`SecureWorkspaceAPI.dispatch()`) implementing the complete JSON-in / JSON-out contract for desktop IPC and mobile Chaquopy.
 - **Headless Sidecar Daemon (`daemon.py`):** Communicates with host applications over newline-delimited JSON (NDJSON) via standard input/output. Bundled with PyInstaller for production distribution (end users never need Python installed).
 - **Desktop UI (`apps/desktop`):** Tauri v2 (Rust shell) + Vite + React 19 + TypeScript + Tailwind CSS v4.
+- **Web App & Viewer (`apps/web`):** Static Single Page Application (SPA) on Cloudflare Pages. React 19 + TypeScript + Tailwind CSS v4 + WebAssembly (`hash-wasm` & `libsodium-wrappers-sumo`).
 - **Mobile UI (`apps/android`):** React Native + Chaquopy (Python core embedded on Android).
 - **Identity & Zero Custody:** Direct OAuth2 with user's Google account. No SecureWorkspace backend server, custodian accounts, or hosted databases.
 
@@ -52,8 +55,11 @@ secureworkspace/
 │   ├── desktop/             # Tauri v2 + React 19 + TypeScript + Tailwind CSS desktop app
 │   │   ├── src/             # React views: Wizard, Dashboard, Files, Diverged Modal, Settings
 │   │   └── src-tauri/       # Rust shell & daemon IPC manager (daemon.rs, lib.rs)
-│   └── android/             # React Native + Chaquopy + Kotlin native bridge (Phase 6)
-├── google outh clients/     # OAuth desktop client secrets (gitignored)
+│   ├── web/                 # React 19 + TS + Tailwind v4 + WASM client-side reader (Phase 6)
+│   └── android/             # React Native + Chaquopy + Kotlin native bridge (Phase 7)
+├── google outh clients/     # OAuth client configuration files (gitignored)
+│   ├── client_secret_desktop.json  # Desktop OAuth Client (Installed App)
+│   └── WEB_CLIENT_ID.json          # Web App OAuth Client (SPA)
 ├── specs/
 │   └── encryption-format/   # Formal specification and test_vectors.json
 ├── spikes/                  # Phase 0 validation spikes (Desktop crypto, Chaquopy, Drive loopback)
@@ -61,50 +67,84 @@ secureworkspace/
 │   ├── unit/                # 90+ fast deterministic unit tests (crypto, header, db, sync, daemon, oauth)
 │   ├── integration/         # Multi-device sync lifecycle & live Google Drive roundtrip tests
 │   └── vectors/             # Published test vector verification
-└── docs/                    # PRD, project status, and architecture logs (gitignored)
+└── docs/                    # PRD, specs, and implementation roadmaps (gitignored)
 ```
 
 ---
 
-## Running & Testing the Desktop App
+## Google Cloud Console Setup Guide
 
-### 1. Run the Full Native Desktop App (Tauri Window)
-Launches the native desktop window with the React 19 frontend and automatically starts the background Python daemon:
+To connect SecureWorkspace to Google Drive, set up a project in Google Cloud Console:
 
+### 1. Create a Google Cloud Project & Enable APIs
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project named **SecureWorkspace** (or your preferred name).
+3. In the sidebar, navigate to **APIs & Services > Library**.
+4. Search for **Google Drive API** and click **Enable**.
+
+### 2. Configure OAuth Consent Screen
+1. Go to **APIs & Services > OAuth consent screen**.
+2. Select **External** user type and click **Create**.
+3. Fill in:
+   - **App Name:** `SecureWorkspace` (or `Cyber Shield Vault`)
+   - **User support email:** Your email address
+   - **Developer contact information:** Your email address
+4. On the **Scopes** page, add the following scopes:
+   - `https://www.googleapis.com/auth/drive.file` *(Restricted access strictly to files created/opened by this app)*
+   - `https://www.googleapis.com/auth/userinfo.email` *(Used to display connected user badge)*
+   - `openid`
+5. On the **Test Users** page, add your Google account email to allow login while in development.
+
+### 3. Create OAuth Credentials
+
+You will create two separate OAuth 2.0 Client IDs:
+
+#### A. Desktop Client ID (for Tauri Desktop App):
+1. Go to **APIs & Services > Credentials > Create Credentials > OAuth client ID**.
+2. Select Application type: **Desktop app**.
+3. Name it: `SecureWorkspace Desktop`.
+4. Click **Create**, then click **Download JSON**.
+5. Save this file to:
+   ```text
+   google outh clients/client_secret_desktop.json
+   ```
+   *(This folder is `.gitignored` to prevent committing it to GitHub).*
+
+#### B. Web Client ID (for Web App & Read-Only Viewer):
+1. In **Credentials**, click **Create Credentials > OAuth client ID**.
+2. Select Application type: **Web application**.
+3. Name it: `SecureWorkspace Web`.
+4. Under **Authorized JavaScript origins**, add:
+   - `http://localhost:5173` *(for local Vite dev)*
+   - `https://<your-subdomain>.harshdadiya.in` *(for Cloudflare Pages production)*
+5. Under **Authorized redirect URIs**, add:
+   - `http://localhost:5173`
+   - `https://<your-subdomain>.harshdadiya.in`
+6. Click **Create** and download the JSON as `google outh clients/WEB_CLIENT_ID.json`.
+
+---
+
+## Running the Applications
+
+### 1. Desktop App (Tauri + React 19 + Python Daemon)
 ```powershell
 cd apps/desktop
 npm install
 npm run tauri dev
 ```
 
-*What you can test in the desktop app:*
-- **Create Workspace Wizard:** 5-step onboarding wizard (Workspace Name, Master Password, 24-Word Recovery Grid, Recovery Verification Test, and Google Drive Authorization).
-- **Live Google OAuth:** Click **"Authorize Google Drive"** to trigger the browser consent flow (`drive.file` scope). When granted, UI automatically updates to `✓ Connected as user@gmail.com`.
-- **Sync & Dashboard Views:** View donut version ring, changes table (Added, Changed, Deleted), and status pills.
-- **Settings & Security:** View connection status, switch Google accounts, or disconnect.
-
----
-
-### 2. Run in Browser Dev Mode (Rapid UI Preview)
-For UI-only development and rapid hot-reloading in any web browser with built-in mock fallback:
-
+### 2. Web App (Landing Page + In-Browser Viewer)
 ```powershell
-cd apps/desktop
+cd apps/web
+npm install
 npm run dev
 ```
-Open **`http://localhost:1420`** in your browser.
-
----
+Open **`http://localhost:5173`** in your browser.
 
 ### 3. Run Automated Tests
-
 ```powershell
-# 1. Full Python Core Test Suite (100/100 tests passing)
-& 'D:\Projects\SecureWorkspace\.venv\Scripts\python.exe' -m pytest -v
-
-# 2. Rust-to-Python IPC Daemon Integration Test
-cd apps/desktop/src-tauri
-cargo test
+# Run all unit and cryptographic test vectors
+.venv\Scripts\pytest tests\unit tests\vectors -v
 ```
 
 ---
@@ -114,22 +154,12 @@ cargo test
 ### **Q: Do we need user credentials when building the app?**
 **No. Absolutely not.**
 
-Here is the exact security distinction between build-time and runtime:
-
-| Phase | What Is Needed | Are Secret User Credentials Required? |
+| Environment | What Is Needed | Are Secret User Credentials Required? |
 | :--- | :--- | :--- |
-| **Build Time** (`npm run build`, `npm run tauri build`, `cargo build`) | Compiles TypeScript, CSS, Rust shell, and bundles the sidecar. | **NO.** You never need user credentials, passwords, or `token.json` files to build or package the application. |
-| **Client Secrets** (`client_secret_desktop.json`) | Public OAuth Client ID registration from Google Cloud Console. | According to RFC 8252 (OAuth 2.0 for Native Apps), desktop apps are *public clients*. Client secrets for desktop clients are app identifiers, not private user secrets. For developers, this file lives in `google outh clients/client_secret_desktop.json` (gitignored). |
-| **Runtime** (User running the installed app) | User authorizes their own Google Drive account via browser popup. | User credentials (`credentials.json` with access & refresh tokens) are generated **only at runtime** on the user's local machine and stored in `%LOCALAPPDATA%\SecureWorkspace\credentials.json`. They are never baked into builds. |
-
----
-
-## Security Model & Invariants
-
-- **Client-Side Zero-Knowledge:** Plaintext is never uploaded to Drive or stored unencrypted on disk. All files and directory names are encrypted prior to I/O.
-- **Traffic Analysis:** Drive and network observers can observe file sizes, access timestamps, and account identity, but never contents or file paths.
-- **Local Device Protection:** Active files are decrypted to managed temporary files only while open in an external editor and securely zeroed out on save or lock.
-- **Permanent Loss Guarantee:** If both the master password and the 24-word recovery phrase are lost, data cannot be recovered by design.
+| **Build Time** (`npm run build`, `scripts/build_desktop.ps1`) | Compiles TypeScript, CSS, Rust shell, and freezes sidecar daemon. | **NO.** You never need user credentials, passwords, or personal tokens to build. |
+| **Desktop Client Secret** (`client_secret_desktop.json`) | Public OAuth Client ID registration from Google Cloud Console. | According to RFC 8252 (OAuth 2.0 for Native Apps), desktop apps are *public clients*. For developers, this file lives in `google outh clients/` (gitignored). When creating release builds with `scripts/bundle_daemon.py`, it is frozen into the daemon binary so end users never have to configure it. |
+| **Web Client ID** (`WEB_CLIENT_ID.json`) | Public Web Client ID from Google Cloud Console. | Injected at build time via `VITE_GOOGLE_CLIENT_ID`. Web SPAs do **not** use or bundle client secrets; Google validates requests via whitelisted Authorized Origins. |
+| **Runtime User Data** (`credentials.json`) | Generated only when the user logs into their Google account. | Stored in the user's OS profile (`%LOCALAPPDATA%\SecureWorkspace\credentials.json`). It is created strictly at runtime and deleted on logout. |
 
 ---
 
@@ -140,13 +170,11 @@ Here is the exact security distinction between build-time and runtime:
 - [x] **Phase 2: Drive Storage Adapter** (Abstract `StorageAdapter`, `MockStorageAdapter`, production `GoogleDriveStorageAdapter` with 256 KiB resumable uploads, exponential backoff with jitter, and live E2E verification).
 - [x] **Phase 3: Workspace & SQLite Metadata Engine** (WAL mode SQLite, zero-plaintext paths at rest with `SecretBox(meta_key)` and keyed BLAKE2b digests, layout & process lock manager, two-tier change detector, safe temp manager, database rebuilder).
 - [x] **Phase 4: Git-Style Pull, Push and Revert** (Version manifests in `versions/`, `HEAD` version tracking, read-only `status()`, `pull()` with safety snapshots, `push()` with atomic race pre-check and mass-deletion guard, `force_push()`, and `revert()`).
-- [x] **Phase 5 Part 1: Unified JSON API Facade** (Standard JSON-in / JSON-out envelope contract across Chaquopy and desktop).
-- [x] **Phase 5 Part 2A: Sidecar Daemon** (Headless stdin/stdout NDJSON IPC process).
-- [x] **Phase 5 Part 2B: Tauri Desktop App & Design System** (Tauri v2 Rust bridge, React 19 UI with 5 screens: Wizard, Dashboard, Files, Diverged Modal, Settings).
-- [x] **Phase 5 Part 2C: Desktop Google OAuth Integration** (Browser consent loop, auto-refresh, UI state wiring, 100/100 tests passing).
-- [ ] **Phase 6: Android App** (React Native UI, Kotlin Chaquopy bridge, Android Keystore wrapped key protection, share sheet / file picker integration).
-- [ ] **Phase 7: External Backups & History Retention** (90-day version retention pruning, external HDD encrypted snapshot export, offline recovery drill).
-- [ ] **Phase 8: Security Hardening & Release** (Formal crypto audit, fuzzing, dependency audit, open-source packaging).
+- [x] **Phase 5: Desktop App & Packaging** (Tauri v2 Rust bridge, React 19 UI with 14 components/views, desktop Google OAuth loopback flow, NSIS Windows installer bundling).
+- [ ] **Phase 6: Web App & Zero-Server Read-Only Viewer** (Product landing page, Google Identity Services OAuth, in-browser Argon2id WASM in Web Worker, 64 KB chunk SecretStream decryptor, Mozilla PDF.js, SheetJS Excel, PapaParse CSV, docx-preview Word, Prism.js code viewer, Cloudflare Pages on custom subdomain).
+- [ ] **Phase 7: Android App** (React Native UI, Kotlin Chaquopy bridge, Android Keystore wrapped key protection, share sheet / file picker integration).
+- [ ] **Phase 8: External Backups & History Retention** (90-day version retention pruning, external HDD encrypted snapshot export, offline recovery drill).
+- [ ] **Phase 9: Security Hardening & Release** (Formal crypto audit, fuzzing, dependency audit, open-source packaging).
 
 ---
 

@@ -54,8 +54,15 @@ def main():
         "--hidden-import", "win32ctypes",
         "--hidden-import", "google.auth",
         "--hidden-import", "google_auth_oauthlib",
-        str(daemon_entry),
     ]
+
+    # Include desktop client secret in frozen binary if present
+    desktop_secret = repo_root / "google outh clients" / "client_secret_desktop.json"
+    if desktop_secret.is_file():
+        cmd.extend(["--add-data", f"{desktop_secret};."])
+        print(f"Bundling desktop OAuth credentials from: {desktop_secret}")
+
+    cmd.append(str(daemon_entry))
 
     print(f"Executing: {' '.join(cmd)}")
     result = subprocess.run(cmd, cwd=str(repo_root))

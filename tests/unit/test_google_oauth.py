@@ -73,12 +73,10 @@ def test_oauth_unauthenticated_state(tmp_path: Path):
     creds_file = tmp_path / "empty_creds" / "credentials.json"
     manager = GoogleOAuthManager(credentials_path=str(creds_file))
 
-    # Disable fallback to spike token during unit test
-    with patch.object(manager, "_find_dev_fallback_token", return_value=None):
-        assert not manager.is_authenticated()
-        assert manager.get_credentials() is None
-        with pytest.raises(AuthenticationError):
-            manager.get_access_token()
+    assert not manager.is_authenticated()
+    assert manager.get_credentials() is None
+    with pytest.raises(AuthenticationError):
+        manager.get_access_token()
 
 
 def test_oauth_authenticated_and_refresh_flow(tmp_path: Path):
@@ -116,8 +114,7 @@ def test_oauth_authenticated_and_refresh_flow(tmp_path: Path):
     # 4. Logout
     assert manager.logout() is True
     assert not creds_file.is_file()
-    with patch.object(manager, "_find_dev_fallback_token", return_value=None):
-        assert not manager.is_authenticated()
+    assert not manager.is_authenticated()
 
 
 def test_api_google_auth_integration(tmp_path: Path):
@@ -126,11 +123,10 @@ def test_api_google_auth_integration(tmp_path: Path):
     api = SecureWorkspaceAPI(oauth_manager=manager)
 
     # 1. Status when unauthenticated
-    with patch.object(manager, "_find_dev_fallback_token", return_value=None):
-        status_unauth = api.google_auth_status()
-        assert status_unauth["success"]
-        assert status_unauth["data"]["authenticated"] is False
-        assert status_unauth["data"]["storage_connected"] is False
+    status_unauth = api.google_auth_status()
+    assert status_unauth["success"]
+    assert status_unauth["data"]["authenticated"] is False
+    assert status_unauth["data"]["storage_connected"] is False
 
     # 2. Mock successful login flow
     mock_flow = MagicMock()
@@ -172,5 +168,4 @@ def test_api_google_auth_integration(tmp_path: Path):
         logout_res = api.google_auth_logout()
         assert logout_res["success"]
         assert api._storage is None
-        with patch.object(manager, "_find_dev_fallback_token", return_value=None):
-            assert api.google_auth_status()["data"]["authenticated"] is False
+        assert api.google_auth_status()["data"]["authenticated"] is False

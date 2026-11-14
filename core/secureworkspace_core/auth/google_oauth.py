@@ -6,6 +6,7 @@ silent token auto-refresh, and persistent credential storage.
 
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 import platformdirs
@@ -45,6 +46,12 @@ def find_client_secret_file(custom_path: Optional[str] = None) -> Optional[Path]
         p = Path(custom_path).expanduser().resolve()
         if p.is_file():
             return p
+
+    # 1. PyInstaller bundled frozen binary path (Production Release)
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        bundled = Path(sys._MEIPASS) / "client_secret_desktop.json"
+        if bundled.is_file():
+            return bundled
 
     env_path = os.environ.get("SECUREWORKSPACE_CLIENT_SECRET_FILE")
     if env_path:
@@ -111,16 +118,6 @@ class GoogleOAuthManager:
         )
         self._cached_creds: Optional[Credentials] = None
 
-    def _find_dev_fallback_token(self) -> Optional[Path]:
-        """Looks for Spike 0.6 token.json if default credentials do not exist yet."""
-        current = Path(__file__).resolve().parent
-        for _ in range(5):
-            candidate = current / "spikes" / "spike_06_drive" / "token.json"
-            if candidate.is_file():
-                return candidate
-            current = current.parent
-        return None
-
     def is_authenticated(self) -> bool:
         """Checks if valid credentials exist or can be refreshed."""
         try:
@@ -138,11 +135,6 @@ class GoogleOAuthManager:
             return self._cached_creds
 
         target_file = self.credentials_path
-        if not target_file.is_file():
-            fallback = self._find_dev_fallback_token()
-            if fallback and fallback.is_file():
-                target_file = fallback
-
         if not target_file.is_file():
             return None
 
