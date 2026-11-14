@@ -125,10 +125,16 @@ export function App() {
           }
           await refreshWorkspaceData();
         } else {
-          setAppState("locked");
+          const savedPath = localStorage.getItem("sw_workspace_path");
+          if (!savedPath) {
+            setAppState("wizard");
+          } else {
+            setAppState("locked");
+          }
         }
       } catch {
-        setAppState("locked");
+        const savedPath = localStorage.getItem("sw_workspace_path");
+        setAppState(savedPath ? "locked" : "wizard");
       }
 
       try {
@@ -331,6 +337,22 @@ export function App() {
     }
   };
 
+  const handleDeleteFile = async (file: WorkspaceFile) => {
+    const ok = window.confirm(`Are you sure you want to delete '${file.name}' from your workspace?`);
+    if (!ok) return;
+
+    try {
+      const res = await api.deleteFile(file.path);
+      if (res.success) {
+        await refreshWorkspaceData();
+      } else {
+        alert(res.message || "Failed to delete file.");
+      }
+    } catch (err: any) {
+      alert(`Delete error: ${err?.message || String(err)}`);
+    }
+  };
+
   const handleViewHistory = (_file: WorkspaceFile) => {
     setActiveTab("history");
   };
@@ -410,6 +432,7 @@ export function App() {
               onOpenFile={handleOpenFile}
               onExportFile={handleExportFile}
               onViewHistory={handleViewHistory}
+              onDeleteFile={handleDeleteFile}
             />
           )}
 

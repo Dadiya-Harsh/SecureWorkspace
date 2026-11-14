@@ -17,6 +17,7 @@ interface FilesViewProps {
   onOpenFile: (file: WorkspaceFile) => void;
   onExportFile: (file: WorkspaceFile) => void;
   onViewHistory: (file: WorkspaceFile) => void;
+  onDeleteFile?: (file: WorkspaceFile) => void;
 }
 
 export const FilesView: React.FC<FilesViewProps> = ({
@@ -25,6 +26,7 @@ export const FilesView: React.FC<FilesViewProps> = ({
   onOpenFile,
   onExportFile,
   onViewHistory,
+  onDeleteFile,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState<WorkspaceFile | null>(
@@ -120,31 +122,39 @@ export const FilesView: React.FC<FilesViewProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-line/60 text-sm">
-            {filteredFiles.map((file) => {
-              const isSelected = selectedFile?.path === file.path;
-              return (
-                <tr
-                  key={file.path}
-                  onClick={() => setSelectedFile(file)}
-                  className={`cursor-pointer transition-colors ${
-                    isSelected ? "bg-vault-subtle/50" : "hover:bg-mineral/20"
-                  }`}
-                >
-                  <td className="py-3.5 px-6 font-medium text-ink">
-                    {file.name}
-                  </td>
-                  <td className="py-3.5 px-6 text-ink-muted">
-                    {formatSize(file.size_bytes)}
-                  </td>
-                  <td className="py-3.5 px-6 text-ink-muted">
-                    {file.modified_at}
-                  </td>
-                  <td className="py-3.5 px-6">
-                    {renderStatusBadge(file.status)}
-                  </td>
-                </tr>
-              );
-            })}
+            {filteredFiles.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-12 text-center text-sm text-ink-muted">
+                  {searchQuery ? "No matching files found." : "No files in this workspace yet. Click \"+ Add files\" to start adding documents."}
+                </td>
+              </tr>
+            ) : (
+              filteredFiles.map((file) => {
+                const isSelected = selectedFile?.path === file.path;
+                return (
+                  <tr
+                    key={file.path}
+                    onClick={() => setSelectedFile(file)}
+                    className={`cursor-pointer transition-colors ${
+                      isSelected ? "bg-vault-subtle/50" : "hover:bg-mineral/20"
+                    }`}
+                  >
+                    <td className="py-3.5 px-6 font-medium text-ink">
+                      {file.name}
+                    </td>
+                    <td className="py-3.5 px-6 text-ink-muted">
+                      {formatSize(file.size_bytes)}
+                    </td>
+                    <td className="py-3.5 px-6 text-ink-muted">
+                      {file.modified_at}
+                    </td>
+                    <td className="py-3.5 px-6">
+                      {renderStatusBadge(file.status)}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
@@ -178,6 +188,15 @@ export const FilesView: React.FC<FilesViewProps> = ({
               <History className="w-3.5 h-3.5" />
               History
             </button>
+            {onDeleteFile && (
+              <button
+                onClick={() => onDeleteFile(selectedFile)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/90 text-white text-xs font-semibold rounded-lg hover:bg-red-700 transition"
+                title="Delete file"
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
       )}
