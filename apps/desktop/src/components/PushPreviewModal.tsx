@@ -65,7 +65,7 @@ export const PushPreviewModal: React.FC<PushPreviewModalProps> = ({
 
   const handleConfirmPush = async () => {
     if (previewData?.is_mass_deletion && !confirmMassDeletion) {
-      alert("Please confirm the mass deletion warning before continuing.");
+      setErrorMessage("Please check the confirmation box below to proceed with mass deletion.");
       return;
     }
 

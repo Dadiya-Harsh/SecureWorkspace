@@ -165,8 +165,68 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
     { num: 5, label: "Connect Drive" },
   ];
 
+  const [isCopied, setIsCopied] = useState(false);
+
   const handleCopyPhrase = () => {
-    navigator.clipboard.writeText(recoveryWords.join(" "));
+    try {
+      navigator.clipboard.writeText(recoveryWords.join(" "));
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
+  const handlePrint = () => {
+    try {
+      // Create a hidden iframe to print safely without blocking WebView2 main thread
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      document.body.appendChild(iframe);
+
+      const content = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>SecureWorkspace Recovery Key - ${name}</title>
+          <style>
+            body { font-family: monospace; padding: 20px; color: #14201C; }
+            h2 { margin-bottom: 4px; }
+            p { font-size: 12px; color: #5A6662; margin-bottom: 24px; }
+            .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+            .word-card { border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <h2>SecureWorkspace Recovery Key</h2>
+          <p>Workspace: ${name} • Generated: ${new Date().toLocaleDateString()}</p>
+          <div class="grid">
+            ${recoveryWords.map((w, i) => `<div class="word-card">${i + 1}. <strong>${w}</strong></div>`).join("")}
+          </div>
+        </body>
+        </html>
+      `;
+
+      if (iframe.contentWindow) {
+        iframe.contentWindow.document.open();
+        iframe.contentWindow.document.write(content);
+        iframe.contentWindow.document.close();
+        iframe.contentWindow.focus();
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.print();
+          } catch {}
+          setTimeout(() => document.body.removeChild(iframe), 1000);
+        }, 300);
+      }
+    } catch (e) {
+      console.warn("Print error:", e);
+    }
   };
 
   const handleDownloadFile = () => {
@@ -422,7 +482,7 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
                     <Download className="w-3.5 h-3.5" /> Save as file
                   </button>
                   <button
-                    onClick={() => window.print()}
+                    onClick={handlePrint}
                     className="px-3 py-1.5 rounded-lg border border-line hover:bg-mineral/40 text-ink font-medium flex items-center gap-1.5"
                   >
                     <Printer className="w-3.5 h-3.5" /> Print
@@ -431,7 +491,7 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
                     onClick={handleCopyPhrase}
                     className="px-3 py-1.5 rounded-lg border border-line hover:bg-mineral/40 text-ink font-medium flex items-center gap-1.5"
                   >
-                    <Copy className="w-3.5 h-3.5" /> Copy
+                    <Copy className="w-3.5 h-3.5" /> {isCopied ? "✓ Copied!" : "Copy"}
                   </button>
                 </div>
 

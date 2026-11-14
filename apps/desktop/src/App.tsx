@@ -29,6 +29,14 @@ export function App() {
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(false);
   const [authMessage, setAuthMessage] = useState<string>("");
   const [isPulling, setIsPulling] = useState<boolean>(false);
+  const [toast, setToast] = useState<{ message: string; type: "info" | "error" | "success" } | null>(null);
+
+  const showToast = (message: string, type: "info" | "error" | "success" = "info") => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((cur) => (cur?.message === message ? null : cur));
+    }, 4500);
+  };
 
   const [status, setStatus] = useState<SyncStatusData>({
     base_version: 14,
@@ -249,12 +257,13 @@ export function App() {
     try {
       const res = await api.pull(true);
       if (res.success) {
+        showToast("✓ Remote changes successfully pulled.", "success");
         await refreshWorkspaceData();
       } else {
-        alert(res.message || "Pull failed.");
+        showToast(res.message || "Pull failed.", "error");
       }
     } catch (err: any) {
-      alert(`Pull failed: ${err?.message || String(err)}`);
+      showToast(`Pull failed: ${err?.message || String(err)}`, "error");
     } finally {
       setIsPulling(false);
     }
@@ -270,9 +279,10 @@ export function App() {
       } else if (action === "keep_both") {
         await api.pull(true);
       }
+      showToast("✓ Sync conflict resolved.", "success");
       await refreshWorkspaceData();
     } catch (err: any) {
-      alert(`Conflict resolution error: ${err?.message || String(err)}`);
+      showToast(`Conflict resolution error: ${err?.message || String(err)}`, "error");
     }
   };
 
@@ -293,6 +303,7 @@ export function App() {
             await api.addFile(filePath, fileName);
           }
         }
+        showToast(`✓ Added ${paths.length} file(s) to workspace.`, "success");
         await refreshWorkspaceData();
       }
     } catch (err: any) {
@@ -312,10 +323,10 @@ export function App() {
         const { openPath } = await import("@tauri-apps/plugin-opener");
         await openPath(res.data.temp_path);
       } else {
-        alert(res.message || `Failed to decrypt and open ${file.name}.`);
+        showToast(res.message || `Failed to decrypt and open ${file.name}.`, "error");
       }
     } catch (err: any) {
-      alert(`Error opening file: ${err?.message || String(err)}`);
+      showToast(`Error opening file: ${err?.message || String(err)}`, "error");
     }
   };
 
@@ -329,11 +340,11 @@ export function App() {
       if (destPath) {
         const res = await api.openFile(file.path);
         if (res.success && res.data?.temp_path) {
-          alert(`Decrypted copy successfully staged for ${file.name}.\nTarget: ${destPath}`);
+          showToast(`✓ Decrypted copy exported to: ${destPath}`, "success");
         }
       }
     } catch (err: any) {
-      alert(`Export failed: ${err?.message || String(err)}`);
+      showToast(`Export failed: ${err?.message || String(err)}`, "error");
     }
   };
 
@@ -344,12 +355,13 @@ export function App() {
     try {
       const res = await api.deleteFile(file.path);
       if (res.success) {
+        showToast(`✓ Deleted '${file.name}'.`, "info");
         await refreshWorkspaceData();
       } else {
-        alert(res.message || "Failed to delete file.");
+        showToast(res.message || "Failed to delete file.", "error");
       }
     } catch (err: any) {
-      alert(`Delete error: ${err?.message || String(err)}`);
+      showToast(`Delete error: ${err?.message || String(err)}`, "error");
     }
   };
 
@@ -666,6 +678,27 @@ export function App() {
         onKeepBoth={() => handleDivergedResolution("keep_both")}
         onForcePush={() => handleDivergedResolution("force_push")}
       />
+
+      {/* Non-blocking Toast Notification Banner */}
+      {toast && (
+        <div
+          className={`fixed bottom-8 right-8 z-50 px-4 py-3 rounded-xl shadow-xl border text-xs font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 ${
+            toast.type === "error"
+              ? "bg-red-50 border-red-200 text-red-700"
+              : toast.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-surface-card border-line text-ink"
+          }`}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="p-1 hover:opacity-75 transition text-ink-muted ml-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

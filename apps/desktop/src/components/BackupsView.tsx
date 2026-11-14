@@ -83,7 +83,8 @@ export const BackupsView: React.FC<BackupsViewProps> = ({
 
   const handleExportBackup = async () => {
     if (!selectedDestination) {
-      alert("Please select a target destination folder on your external drive first.");
+      setExportProgress("Error: Please select a target destination folder on your external drive first.");
+      setTimeout(() => setExportProgress(""), 4000);
       return;
     }
 
@@ -112,11 +113,13 @@ export const BackupsView: React.FC<BackupsViewProps> = ({
       setTimeout(() => {
         setIsExporting(false);
         setExportProgress("");
-      }, 2000);
+      }, 2500);
     } catch (err: any) {
-      alert(`Backup failed: ${err?.message || String(err)}`);
-      setIsExporting(false);
-      setExportProgress("");
+      setExportProgress(`Backup failed: ${err?.message || String(err)}`);
+      setTimeout(() => {
+        setIsExporting(false);
+        setExportProgress("");
+      }, 4000);
     }
   };
 
