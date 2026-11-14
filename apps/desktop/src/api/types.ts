@@ -82,3 +82,62 @@ export interface WorkspaceFile {
   modified_at: string;
   status: FileStatus;
 }
+
+export interface PushPreviewData {
+  base_version: number;
+  remote_head: number;
+  is_refused: boolean;
+  refusal_reason?: string | null;
+  has_changes: boolean;
+  is_mass_deletion: boolean;
+  upload_count: number;
+  delete_count: number;
+  files_to_upload: FileChangeItem[];
+  files_to_delete: FileChangeItem[];
+}
+
+export interface PullPreviewData {
+  base_version: number;
+  target_version: number;
+  files_to_download: any[];
+  files_to_delete: any[];
+  files_to_snapshot: any[];
+  download_bytes: number;
+}
+
+export interface VersionManifestEntry {
+  path: string;
+  object_id: string;
+  size: number;
+  sha256: string;
+  mtime_ms: number;
+}
+
+export interface RemoteVersion {
+  version_number: number;
+  manifest_id: string;
+  timestamp_ms: number;
+  device_id: string;
+  message: string;
+  entries?: VersionManifestEntry[];
+}
+
+export interface FileHistoryVersion {
+  version_number: number;
+  timestamp_ms: number;
+  device_id: string;
+  message: string;
+  size: number;
+  sha256: string;
+}
+
+export interface SafetySnapshotItem {
+  snapshot_id: string;
+  timestamp_ms: number;
+  original_path: string;
+  original_path_hash: string;
+  snapshot_path: string;
+  size: number;
+  sha256: string;
+  reason: string;
+}

@@ -38,3 +38,8 @@ target/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Documentation & handoff scratchpads
+docs/
+NEXT_CHAT_PROMPT.txt
+
