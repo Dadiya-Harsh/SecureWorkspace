@@ -77,8 +77,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setIsSwitcherOpen(!isSwitcherOpen)}
             className="w-full flex items-center justify-between p-2.5 rounded-xl hover:bg-rail-hover transition group text-left"
           >
-            <div className="flex items-center gap-2.5 truncate">
-              <span className="w-2.5 h-2.5 rounded-full bg-vault-mint inline-block flex-shrink-0 animate-pulse" />
+            <div className="flex items-center gap-3 truncate">
+              <img
+                src="/logo.png"
+                alt="SecureWorkspace"
+                className="w-8 h-8 rounded-lg border border-vault-cyan/30 flex-shrink-0 object-cover shadow-sm shadow-cyan-950/40"
+              />
               <div className="truncate">
                 <div className="text-xs font-semibold uppercase tracking-wider text-ink-light/50">
                   Workspace

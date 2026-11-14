@@ -57,14 +57,25 @@ export const UnlockView: React.FC<UnlockViewProps> = ({
       {/* Left Security Hero Panel */}
       <div className="hidden lg:flex w-5/12 bg-rail text-ink-light flex-col justify-between p-12 border-r border-line-dark/40">
         <div>
-          <div className="flex items-center gap-2.5 text-white font-semibold text-lg">
-            <span className="w-3 h-3 rounded-full bg-vault-mint inline-block" />
+          <div className="flex items-center gap-3 text-white font-semibold text-lg">
+            <img
+              src="/logo.png"
+              alt="SecureWorkspace"
+              className="w-9 h-9 rounded-xl border border-vault-cyan/30 shadow-md object-cover"
+            />
             SecureWorkspace
           </div>
 
-          <div className="mt-24 space-y-6">
-            <div className="w-16 h-16 rounded-full border-2 border-vault-mint/40 flex items-center justify-center text-vault-mint font-bold text-lg bg-vault-mint/10">
-              v{version}
+          <div className="mt-20 space-y-6">
+            <div className="inline-block relative">
+              <img
+                src="/logo.png"
+                alt="SecureWorkspace"
+                className="w-20 h-20 rounded-2xl shadow-xl shadow-cyan-950/60 border border-vault-cyan/40 object-cover"
+              />
+              <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 text-xs font-bold rounded-full bg-rail border border-vault-mint/40 text-vault-mint shadow">
+                v{version}
+              </span>
             </div>
 
             <h1 className="text-3xl font-bold text-white tracking-tight leading-snug">
