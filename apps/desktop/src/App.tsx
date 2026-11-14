@@ -438,17 +438,17 @@ export function App() {
 
   const handleOpenFile = async (file: WorkspaceFile) => {
     try {
-      const res = await api.openFile(file.path);
-      if (res.success && res.data?.temp_path) {
-        try {
-          const { openPath } = await import("@tauri-apps/plugin-opener");
-          await openPath(res.data.temp_path);
-        } catch {
-          const { invoke } = await import("@tauri-apps/api/core");
-          await invoke("open_system_path", { path: res.data.temp_path });
-        }
-      } else {
-        showToast(res.message || `Failed to decrypt and open ${file.name}.`, "error");
+      // Open the actual workspace file directly so edits in external editors (Notepad, Word, etc.) save in-place
+      const normWorkspace = (workspacePath || "").replace(/\\/g, "/").replace(/\/$/, "");
+      const normFile = (file.path || "").replace(/\\/g, "/").replace(/^\//, "");
+      const targetPath = normWorkspace ? `${normWorkspace}/${normFile}` : file.path;
+
+      try {
+        const { openPath } = await import("@tauri-apps/plugin-opener");
+        await openPath(targetPath);
+      } catch {
+        const { invoke } = await import("@tauri-apps/api/core");
+        await invoke("open_system_path", { path: targetPath });
       }
     } catch (err: any) {
       showToast(`Error opening file: ${err?.message || String(err)}`, "error");
