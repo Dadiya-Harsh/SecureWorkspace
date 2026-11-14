@@ -22,6 +22,7 @@ fn dispatch_daemon(request: Value, state: State<'_, AppState>) -> Result<Value, 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState {
             daemon: Mutex::new(DaemonManager::new()),
         })
