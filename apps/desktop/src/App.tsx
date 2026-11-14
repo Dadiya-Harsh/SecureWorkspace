@@ -56,68 +56,21 @@ export function App() {
   };
 
   const [status, setStatus] = useState<SyncStatusData>({
-    base_version: 14,
-    remote_head: 14,
+    base_version: 0,
+    remote_head: 0,
     versions_ahead: 0,
-    has_local_changes: true,
+    has_local_changes: false,
     is_diverged: false,
-    is_up_to_date: false,
+    is_up_to_date: true,
     changes: {
-      new: [
-        {
-          relative_path: "passport-scan.pdf",
-          size_bytes: 1450000,
-          mtime_epoch: Date.now() / 1000,
-        },
-      ],
-      modified: [
-        {
-          relative_path: "budget.xlsx",
-          size_bytes: 84000,
-          mtime_epoch: Date.now() / 1000,
-        },
-      ],
-      deleted: [
-        {
-          relative_path: "old-notes.csv",
-          size_bytes: 12000,
-          mtime_epoch: Date.now() / 1000,
-        },
-      ],
-      synced_count: 142,
+      new: [],
+      modified: [],
+      deleted: [],
+      synced_count: 0,
     },
   });
 
-  const [files, setFiles] = useState<WorkspaceFile[]>([
-    {
-      name: "budget.xlsx",
-      path: "Documents/Taxes/budget.xlsx",
-      size_bytes: 84000,
-      modified_at: "Today",
-      status: "not_pushed",
-    },
-    {
-      name: "return-2025.pdf",
-      path: "Documents/Taxes/return-2025.pdf",
-      size_bytes: 1200000,
-      modified_at: "Mar 3",
-      status: "synced",
-    },
-    {
-      name: "receipts.csv",
-      path: "Documents/Taxes/receipts.csv",
-      size_bytes: 12000,
-      modified_at: "Feb 11",
-      status: "cloud_only",
-    },
-    {
-      name: "scan-01.jpg",
-      path: "Documents/Taxes/scan-01.jpg",
-      size_bytes: 3400000,
-      modified_at: "Feb 2",
-      status: "changed_in_both",
-    },
-  ]);
+  const [files, setFiles] = useState<WorkspaceFile[]>([]);
 
   const refreshWorkspaceData = async () => {
     try {

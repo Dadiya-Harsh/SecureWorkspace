@@ -220,7 +220,7 @@ class SecureWorkspaceClient {
         return {
           success: true,
           id,
-          data: { is_unlocked: true, name: "Personal", workspace_path: "D:/SecureWorkspaces/Personal" } as any,
+          data: { is_unlocked: false, name: "", workspace_path: "" } as any,
         };
 
       case "status":
@@ -228,17 +228,17 @@ class SecureWorkspaceClient {
           success: true,
           id,
           data: {
-            base_version: 14,
-            remote_head: 14,
+            base_version: 0,
+            remote_head: 0,
             versions_ahead: 0,
-            has_local_changes: true,
+            has_local_changes: false,
             is_diverged: false,
-            is_up_to_date: false,
+            is_up_to_date: true,
             changes: {
-              new: [{ relative_path: "passport-scan.pdf", size_bytes: 1450000, mtime_epoch: Date.now() / 1000 }],
-              modified: [{ relative_path: "budget.xlsx", size_bytes: 84000, mtime_epoch: Date.now() / 1000 }],
-              deleted: [{ relative_path: "old-notes.csv", size_bytes: 12000, mtime_epoch: Date.now() / 1000 }],
-              synced_count: 142,
+              new: [],
+              modified: [],
+              deleted: [],
+              synced_count: 0,
             },
           } as any,
         };
@@ -248,12 +248,7 @@ class SecureWorkspaceClient {
           success: true,
           id,
           data: {
-            files: [
-              { name: "budget.xlsx", path: "Documents/Taxes/budget.xlsx", size_bytes: 84000, modified_at: "Today", status: "not_pushed" },
-              { name: "return-2025.pdf", path: "Documents/Taxes/return-2025.pdf", size_bytes: 1200000, modified_at: "Mar 3", status: "synced" },
-              { name: "receipts.csv", path: "Documents/Taxes/receipts.csv", size_bytes: 12000, modified_at: "Feb 11", status: "cloud_only" },
-              { name: "scan-01.jpg", path: "Documents/Taxes/scan-01.jpg", size_bytes: 3400000, modified_at: "Feb 2", status: "changed_in_both" },
-            ],
+            files: [],
           } as any,
         };
 
@@ -262,21 +257,16 @@ class SecureWorkspaceClient {
           success: true,
           id,
           data: {
-            base_version: 14,
-            remote_head: 14,
+            base_version: 0,
+            remote_head: 0,
             is_refused: false,
             refusal_reason: null,
-            has_changes: true,
+            has_changes: false,
             is_mass_deletion: false,
-            upload_count: 2,
-            delete_count: 1,
-            files_to_upload: [
-              { relative_path: "Documents/Taxes/budget.xlsx", size_bytes: 84000, mtime_epoch: Date.now() / 1000 },
-              { relative_path: "Documents/Taxes/passport-scan.pdf", size_bytes: 1450000, mtime_epoch: Date.now() / 1000 },
-            ],
-            files_to_delete: [
-              { relative_path: "Documents/Taxes/old-notes.csv", size_bytes: 12000, mtime_epoch: Date.now() / 1000 },
-            ],
+            upload_count: 0,
+            delete_count: 0,
+            files_to_upload: [],
+            files_to_delete: [],
           } as any,
         };
 
@@ -284,8 +274,8 @@ class SecureWorkspaceClient {
         return {
           success: true,
           id,
-          message: "Pushed version 15 successfully.",
-          data: { new_version: 15, files_uploaded: 2 } as any,
+          message: "Pushed successfully.",
+          data: { new_version: 1, files_uploaded: 0 } as any,
         };
 
       case "list_remote_versions":
@@ -293,37 +283,7 @@ class SecureWorkspaceClient {
           success: true,
           id,
           data: {
-            versions: [
-              {
-                version_number: 14,
-                manifest_id: "m-014",
-                timestamp_ms: Date.now() - 3600000 * 2,
-                device_id: "desktop-win",
-                message: "Updated tax return and spreadsheet calculations",
-                entries: [
-                  { path: "Documents/Taxes/budget.xlsx", object_id: "obj-1", size: 84000, sha256: "abc...", mtime_ms: Date.now() },
-                  { path: "Documents/Taxes/return-2025.pdf", object_id: "obj-2", size: 1200000, sha256: "def...", mtime_ms: Date.now() },
-                ],
-              },
-              {
-                version_number: 13,
-                manifest_id: "m-013",
-                timestamp_ms: Date.now() - 86400000 * 2,
-                device_id: "mobile-android",
-                message: "Added passport scan and insurance receipts",
-                entries: [
-                  { path: "Documents/Taxes/scan-01.jpg", object_id: "obj-3", size: 3400000, sha256: "123...", mtime_ms: Date.now() },
-                ],
-              },
-              {
-                version_number: 12,
-                manifest_id: "m-012",
-                timestamp_ms: Date.now() - 86400000 * 5,
-                device_id: "desktop-win",
-                message: "Initial workspace seed",
-                entries: [],
-              },
-            ],
+            versions: [],
           } as any,
         };
 
@@ -332,18 +292,7 @@ class SecureWorkspaceClient {
           success: true,
           id,
           data: {
-            snapshots: [
-              {
-                snapshot_id: "snap_20261114_140201",
-                timestamp_ms: Date.now() - 7200000,
-                original_path: "Documents/Taxes/budget.xlsx",
-                original_path_hash: "hash123",
-                snapshot_path: ".snapshots/snap_20261114_140201",
-                size: 82000,
-                sha256: "sha_prev_version",
-                reason: "pre-pull",
-              },
-            ],
+            snapshots: [],
           } as any,
         };
 

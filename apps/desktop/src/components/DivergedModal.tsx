@@ -7,6 +7,9 @@ interface DivergedModalProps {
   onPullKeepDrive: () => void;
   onKeepBoth: () => void;
   onForcePush: () => void;
+  driveChangesCount?: number;
+  localChangesCount?: number;
+  conflictingFiles?: string[];
 }
 
 export const DivergedModal: React.FC<DivergedModalProps> = ({
@@ -15,6 +18,9 @@ export const DivergedModal: React.FC<DivergedModalProps> = ({
   onPullKeepDrive,
   onKeepBoth,
   onForcePush,
+  driveChangesCount = 1,
+  localChangesCount = 1,
+  conflictingFiles = [],
 }) => {
   const [confirmInput, setConfirmInput] = useState("");
 
@@ -31,33 +37,35 @@ export const DivergedModal: React.FC<DivergedModalProps> = ({
             Drive and this device both changed
           </h2>
           <p className="text-sm text-ink-muted mt-2 leading-relaxed">
-            Drive has 2 newer versions from Phone. This device has 3 unpushed changes. Nothing is lost whichever you pick.
+            Drive has {driveChangesCount} newer version{driveChangesCount !== 1 ? "s" : ""}. This device has {localChangesCount} unpushed change{localChangesCount !== 1 ? "s" : ""}. Nothing is lost whichever you pick.
           </p>
         </div>
 
-        {/* 2-Column Comparison Table */}
-        <div className="border border-line rounded-xl overflow-hidden divide-y divide-line text-sm">
-          <div className="grid grid-cols-2 bg-mineral/30 py-2.5 px-4 font-semibold text-xs text-ink-muted">
-            <div>In Drive</div>
-            <div>On this device</div>
-          </div>
-
-          <div className="grid grid-cols-2 py-3 px-4 items-center">
-            <div className="flex items-center gap-2 font-mono text-xs">
-              <span>budget.xlsx</span>
-              <span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-[#FCE8E6] text-[#C5221F] flex items-center gap-0.5">
-                <RefreshCw className="w-2.5 h-2.5" />
-                Both
-              </span>
+        {/* Comparison Details */}
+        {conflictingFiles.length > 0 ? (
+          <div className="border border-line rounded-xl overflow-hidden divide-y divide-line text-sm max-h-48 overflow-y-auto">
+            <div className="grid grid-cols-2 bg-mineral/30 py-2.5 px-4 font-semibold text-xs text-ink-muted">
+              <div>In Drive</div>
+              <div>On this device</div>
             </div>
-            <div className="font-mono text-xs text-ink">budget.xlsx</div>
+            {conflictingFiles.map((file) => (
+              <div key={file} className="grid grid-cols-2 py-3 px-4 items-center">
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <span className="truncate">{file}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[11px] font-medium bg-[#FCE8E6] text-[#C5221F] flex items-center gap-0.5 flex-shrink-0">
+                    <RefreshCw className="w-2.5 h-2.5" />
+                    Both
+                  </span>
+                </div>
+                <div className="font-mono text-xs text-ink truncate">{file}</div>
+              </div>
+            ))}
           </div>
-
-          <div className="grid grid-cols-2 py-3 px-4 items-center">
-            <div className="font-mono text-xs text-ink">trip.pdf</div>
-            <div className="font-mono text-xs text-ink">notes.csv</div>
+        ) : (
+          <div className="p-4 rounded-xl bg-mineral/20 border border-line text-xs text-ink-muted leading-relaxed">
+            Both the remote Google Drive branch and your local vault have moved forward independently. Review the options below to resolve the synchronization.
           </div>
-        </div>
+        )}
 
         {/* Primary Safe Resolution Actions */}
         <div className="flex items-center gap-3 pt-2">

@@ -190,7 +190,7 @@ export const PushPreviewModal: React.FC<PushPreviewModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Updated tax return and passport scan"
+                  placeholder="e.g. Updated project documents"
                   value={commitMessage}
                   onChange={(e) => setCommitMessage(e.target.value)}
                   disabled={isPushing}

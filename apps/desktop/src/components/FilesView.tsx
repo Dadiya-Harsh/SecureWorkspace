@@ -80,11 +80,9 @@ export const FilesView: React.FC<FilesViewProps> = ({
     <div className="relative p-8 max-w-6xl mx-auto space-y-6 pb-28">
       {/* Top Controls: Breadcrumb & Search & Action */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {/* Breadcrumb */}
+        {/* Breadcrumb / Title */}
         <div className="flex items-center gap-2 text-base font-semibold text-ink">
-          <span className="text-ink-muted">Documents</span>
-          <span className="text-ink-muted/50">/</span>
-          <span>Taxes</span>
+          <span className="text-ink">Workspace Files</span>
         </div>
 
         {/* Search Bar & Add Button */}
