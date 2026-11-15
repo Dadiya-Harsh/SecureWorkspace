@@ -135,6 +135,10 @@ class SecureWorkspaceAPI:
 
     def _init_sync_engines(self) -> None:
         if self._storage is not None and self._wmk is not None and self._manager is not None:
+            if hasattr(self._storage, "workspace_subfolder") and self._header is not None:
+                self._storage.workspace_subfolder = self._header.name
+                if hasattr(self._storage, "workspace_folder_id"):
+                    self._storage.workspace_folder_id = None
             self._manifest_manager = RemoteManifestManager(self._storage, self._wmk)
             self._status_engine = StatusEngine(self._manager, self._manifest_manager)
             self._push_engine = PushEngine(self._manager, self._manifest_manager)
@@ -605,7 +609,8 @@ class SecureWorkspaceAPI:
 
         if auto_connect and self._storage is None:
             try:
-                adapter = self._oauth_manager.create_storage_adapter()
+                ws_name = self._header.name if self._header else None
+                adapter = self._oauth_manager.create_storage_adapter(workspace_subfolder=ws_name)
                 self.connect_storage(adapter)
             except Exception:
                 pass
@@ -627,7 +632,8 @@ class SecureWorkspaceAPI:
         """
         try:
             auth_data = self._oauth_manager.login(port=port)
-            adapter = self._oauth_manager.create_storage_adapter()
+            ws_name = self._header.name if self._header else None
+            adapter = self._oauth_manager.create_storage_adapter(workspace_subfolder=ws_name)
             self.connect_storage(adapter)
             return success_response(
                 data={

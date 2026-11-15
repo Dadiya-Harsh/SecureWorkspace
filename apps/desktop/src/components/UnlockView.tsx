@@ -59,19 +59,18 @@ export const UnlockView: React.FC<UnlockViewProps> = ({
         <div>
           <div className="flex items-center gap-3 text-white font-semibold text-lg">
             <img
-              src="/logo.png"
+              src="/logo-horizontal-on-dark.svg"
               alt="SecureWorkspace"
-              className="w-9 h-9 rounded-xl border border-vault-cyan/30 shadow-md object-cover"
+              className="h-8 object-contain"
             />
-            SecureWorkspace
           </div>
 
           <div className="mt-20 space-y-6">
             <div className="inline-block relative">
               <img
-                src="/logo.png"
+                src="/mark-on-dark.svg"
                 alt="SecureWorkspace"
-                className="w-20 h-20 rounded-2xl shadow-xl shadow-cyan-950/60 border border-vault-cyan/40 object-cover"
+                className="w-20 h-20 rounded-2xl shadow-xl border border-vault-cyan/40 object-contain p-2 bg-[#0F2620]"
               />
               <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 text-xs font-bold rounded-full bg-rail border border-vault-mint/40 text-vault-mint shadow">
                 v{version}

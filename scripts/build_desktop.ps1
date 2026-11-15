@@ -7,7 +7,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 Write-Host "=== Step 1/3: Cleaning Build Caches ===" -ForegroundColor Cyan
 
 # Remove stale build directories
-@("$repoRoot\dist", "$repoRoot\build", "$repoRoot\apps\desktop\dist", "$repoRoot\apps\desktop\src-tauri\target\release\bundle") | ForEach-Object {
+@("$repoRoot\dist", "$repoRoot\build", "$repoRoot\apps\desktop\dist", "$repoRoot\apps\desktop\src-tauri\target\release\bundle", "$repoRoot\apps\desktop\src-tauri\target\release\desktop.exe") | ForEach-Object {
     if (Test-Path $_) {
         Write-Host "  Removing stale: $_"
         Remove-Item -Recurse -Force $_ -ErrorAction SilentlyContinue

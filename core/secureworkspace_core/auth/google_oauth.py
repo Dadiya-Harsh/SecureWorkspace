@@ -249,10 +249,13 @@ class GoogleOAuthManager:
         return True
 
     def create_storage_adapter(
-        self, app_folder_name: str = "SecureWorkspace"
+        self,
+        app_folder_name: str = "SecureWorkspace",
+        workspace_subfolder: Optional[str] = None,
     ) -> GoogleDriveStorageAdapter:
         """Constructs an authenticated GoogleDriveStorageAdapter."""
         return GoogleDriveStorageAdapter(
             token_provider=self.get_token_provider(),
             app_folder_name=app_folder_name,
+            workspace_subfolder=workspace_subfolder,
         )

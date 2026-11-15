@@ -168,6 +168,14 @@ class PushEngine:
                 "Explicit confirm_mass_deletion=True is required."
             )
 
+        # 0. Ensure workspace.header is uploaded so remote vault is unlockable
+        header_file = self.manager.root_path / "workspace.header"
+        if header_file.is_file():
+            self.manifest_manager.storage.upload_bytes(
+                header_file.read_bytes(),
+                "workspace.header",
+            )
+
         # 1. Upload new / modified objects
         uploaded_entries: Dict[str, WorkspaceEntry] = {}
         for change in preview.files_to_upload:

@@ -500,9 +500,9 @@ export function App() {
       <div className="min-h-screen w-full flex flex-col items-center justify-center bg-rail text-white select-none">
         <div className="flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-200">
           <img
-            src="/logo.png"
+            src="/mark-on-dark.svg"
             alt="SecureWorkspace"
-            className="w-16 h-16 rounded-2xl shadow-xl shadow-cyan-950/60 border border-vault-cyan/40 object-cover"
+            className="w-16 h-16 rounded-2xl shadow-xl border border-vault-cyan/40 object-contain p-2 bg-[#0F2620]"
           />
           <div className="text-lg font-bold tracking-tight">SecureWorkspace</div>
           <div className="flex items-center gap-2 text-xs text-ink-light/60">

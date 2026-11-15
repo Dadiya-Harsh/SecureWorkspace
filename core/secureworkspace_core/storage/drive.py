@@ -40,11 +40,14 @@ class GoogleDriveStorageAdapter(StorageAdapter):
         app_folder_name: str = "SecureWorkspace",
         app_folder_id: Optional[str] = None,
         session: Optional[requests.Session] = None,
+        workspace_subfolder: Optional[str] = None,
     ):
         self.token_provider = token_provider
         self.app_folder_name = app_folder_name
         self.app_folder_id = app_folder_id
         self.session = session or requests.Session()
+        self.workspace_subfolder = workspace_subfolder
+        self.workspace_folder_id: Optional[str] = None
 
     def _request_with_token(
         self,
@@ -79,8 +82,8 @@ class GoogleDriveStorageAdapter(StorageAdapter):
 
         return res
 
-    def ensure_app_folder(self) -> str:
-        """Finds or creates the isolated SecureWorkspace folder."""
+    def ensure_root_folder(self) -> str:
+        """Finds or creates the isolated root SecureWorkspace app folder."""
         if self.app_folder_id:
             return self.app_folder_id
 
@@ -109,13 +112,55 @@ class GoogleDriveStorageAdapter(StorageAdapter):
         self.app_folder_id = create_res.json()["id"]
         return self.app_folder_id
 
+    def ensure_workspace_folder(self) -> str:
+        """Finds or creates the isolated workspace subfolder inside SecureWorkspace root."""
+        root_id = self.ensure_root_folder()
+        if not self.workspace_subfolder:
+            return root_id
+
+        if self.workspace_folder_id:
+            return self.workspace_folder_id
+
+        query = (
+            f"name = '{self.workspace_subfolder}' and "
+            f"'{root_id}' in parents and "
+            "mimeType = 'application/vnd.google-apps.folder' and "
+            "trashed = false"
+        )
+        url = f"{DRIVE_API_BASE}/files"
+        res = self._request_with_token("GET", url, params={"q": query, "fields": "files(id, name, appProperties)"})
+        res.raise_for_status()
+
+        files = res.json().get("files", [])
+        if files:
+            self.workspace_folder_id = files[0]["id"]
+            return self.workspace_folder_id
+
+        create_body = {
+            "name": self.workspace_subfolder,
+            "mimeType": "application/vnd.google-apps.folder",
+            "parents": [root_id],
+            "appProperties": {"app": "SecureWorkspace", "workspace": self.workspace_subfolder},
+        }
+        create_res = self._request_with_token("POST", url, json=create_body)
+        create_res.raise_for_status()
+        self.workspace_folder_id = create_res.json()["id"]
+        return self.workspace_folder_id
+
+    def ensure_app_folder(self) -> str:
+        """Returns the active workspace folder (or root folder if no workspace set)."""
+        if self.workspace_subfolder:
+            return self.ensure_workspace_folder()
+        return self.ensure_root_folder()
+
     def verify_file_in_app_folder(self, remote_id: str) -> RemoteFile:
         """
         Enforces strict boundary security:
-        Verifies that the target file belongs exclusively to the app folder.
+        Verifies that the target file belongs exclusively to the app folder or workspace subfolder.
         Raises FolderBoundaryViolationError if not.
         """
-        app_folder = self.ensure_app_folder()
+        root_folder = self.ensure_root_folder()
+        active_folder = self.ensure_app_folder()
         url = f"{DRIVE_API_BASE}/files/{remote_id}"
         res = self._request_with_token(
             "GET", url, params={"fields": "id, name, size, md5Checksum, modifiedTime, parents, mimeType, appProperties"}
@@ -126,10 +171,11 @@ class GoogleDriveStorageAdapter(StorageAdapter):
 
         data = res.json()
         parents = data.get("parents", [])
-        if app_folder not in parents and remote_id != app_folder:
+        valid_parents = {root_folder, active_folder}
+        if not (set(parents) & valid_parents) and remote_id not in valid_parents:
             raise FolderBoundaryViolationError(
                 f"Security violation: file '{data.get('name')}' (ID: {remote_id}) "
-                f"has parents {parents}, which is outside the SecureWorkspace folder '{app_folder}'."
+                f"has parents {parents}, which is outside the SecureWorkspace folder '{active_folder}'."
             )
 
         return RemoteFile(

@@ -79,9 +79,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center gap-3 truncate">
               <img
-                src="/logo.png"
+                src="/mark-on-dark.svg"
                 alt="SecureWorkspace"
-                className="w-8 h-8 rounded-lg border border-vault-cyan/30 flex-shrink-0 object-cover shadow-sm shadow-cyan-950/40"
+                className="w-8 h-8 rounded-lg flex-shrink-0 object-contain shadow-xs"
               />
               <div className="truncate">
                 <div className="text-xs font-semibold uppercase tracking-wider text-ink-light/50">
