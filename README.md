@@ -1,183 +1,202 @@
 # SecureWorkspace
 
-Open-source, client-side encrypted backup and sync. Files are encrypted on your device before upload, so Google Drive only ever stores ciphertext. You keep the keys, the storage account, the version history and the recovery material.
+Open-source, client-side encrypted cloud workspace with zero-knowledge architecture. Files are encrypted on your local device before upload, ensuring Google Drive only ever stores random ciphertext. You keep the master password, the 24-word recovery phrase, the version history, and the encryption keys.
 
-> **Status: Phase 5 Desktop App & Google OAuth Integration Complete.**  
-> **101/101 unit & crypto vector tests passing** across unit, crypto vectors, daemon IPC, and Rust Tauri bridge.  
-> **Currently Active: Phase 6 Web App & Zero-Server Read-Only Viewer.**  
-> Not yet independently security-reviewed. Do not put real personal documents in it yet.
+🌐 **Live Web App & Viewer:** [https://secureworkspace.harshdadiya.in](https://secureworkspace.harshdadiya.in)  
+📦 **Desktop Installer (Windows x64):** Available in [GitHub Releases](https://github.com/Dadiya-Harsh/SecureWorkspace/releases/latest)
 
 ---
 
-## What It Does
+## Key Features
 
-- **Client-Side Zero-Knowledge Encryption:** Files are encrypted into memory-bounded 64 KB chunks (`SWF1` streaming SecretStream envelope) before leaving the device. Google Drive only sees random ciphertext.
-- **Dual-Path Key Hierarchy:** Both a user master password (Argon2id) and a 24-word BIP-39 recovery phrase unwrap the same 256-bit Workspace Master Key (WMK). Contains an embedded 2048-word dictionary and 8-bit checksum verification.
-- **Zero-Plaintext Metadata at Rest:** File paths and folder structures are never written in plaintext to disk or cloud. SQLite encrypts paths with `SecretBox(meta_key)` and indexes lookups via keyed BLAKE2b digests (`path_hash`).
-- **Git-Style Sync Remote:**
-  - **`status()`:** Strictly read-only check reporting unpushed local changes, remote versions ahead, and diverged state.
-  - **`pull(confirm=True)`:** Stages downloads, creates local safety snapshots of unpushed/modified files before replacing them, and verifies streaming SHA-256 integrity.
-  - **`push(message)`:** Encrypts and uploads immutable objects, uploads encrypted version manifests, verifies remote `HEAD` against concurrent push race conditions, and guards against mass deletions.
-  - **`force_push(confirm=True)`:** Advances remote HEAD with local changes without destroying history.
-  - **`revert(version)`:** Non-destructively rolls back entire workspace to any earlier Drive version as staged unpushed changes.
-  - **`restore_file_version()`:** Granular single-file historical recovery with pre-restore safety snapshots.
-- **Storage Independence & Least Privilege:** Google Drive adapter uses `drive.file` scope restricted strictly to a dedicated app folder with automated boundary checks.
-- **Integrated Desktop Google OAuth:** Direct browser consent flow with silent token auto-refresh and persistent local credential storage.
-- **Zero-Server Web App & In-Browser Viewer:** Unlock and view documents in any web browser without installing the desktop app. Argon2id KDF and chunk decryption execute client-side via WebAssembly in a Web Worker; rich document renderers display PDF, Excel, Word, CSV, Markdown, and Code directly in RAM.
+- **Client-Side Zero-Knowledge Encryption:** Files are encrypted into 64 KB memory-bounded chunks using the `SWF1` streaming SecretStream envelope (`crypto_secretstream_xchacha20poly1305`) before leaving your device. Google Drive never sees plaintext.
+- **Dual-Path Key Hierarchy:** Both your master password (Argon2id) and an emergency 24-word BIP-39 recovery phrase unwrap the same 256-bit Workspace Master Key (WMK).
+- **Multi-Workspace Isolation in Google Drive:** Workspaces are isolated into dedicated subfolders (`SecureWorkspace/<WorkspaceName>/`), each with its own `workspace.header`, version manifests, and encrypted object store.
+- **Git-Style Version Control:**
+  - `status()`: Read-only check reporting unpushed local changes, remote versions ahead, and diverged states.
+  - `push(message)`: Atomically commits and uploads immutable encrypted object chunks and version manifests.
+  - `pull()`: Downloads remote updates non-destructively, taking automated local safety snapshots of modified files.
+  - `revert(version)`: Rolls back entire workspaces or restores individual files from past version snapshots.
+- **Zero-Plaintext Metadata at Rest:** File paths and folder hierarchies are encrypted at rest inside a local WAL-mode SQLite metadata engine. Lookups use keyed BLAKE2b digests (`path_hash`).
+- **Zero-Server In-Browser Web Viewer:** Open and view your encrypted files in any browser on [secureworkspace.harshdadiya.in](https://secureworkspace.harshdadiya.in) without installing desktop software. Decryption runs inside a sandboxed Web Worker via WebAssembly.
+- **Rich Document Viewers:** Direct in-RAM preview for Word documents (`.docx`), Excel spreadsheets (`.xlsx`), PDFs (`.pdf`), CSV tables (`.csv`), Markdown (`.md`), Code files (`.ts`, `.py`, `.json`, `.js`), and images (`.png`, `.jpg`).
+- **Least-Privilege Cloud Storage:** Restricted strictly to Google Drive's `drive.file` scope (the app can only access folders and files it created, never your personal drive contents).
 
 ---
 
-## Architecture & Technology Stack
+## System Architecture
 
-- **One Python Core (`secureworkspace-core`):** All cryptography, SQLite metadata, storage adapters, OAuth authentication, and sync engines reside in a single Python package.
-- **Unified Public JSON API Facade:** Single dispatch point (`SecureWorkspaceAPI.dispatch()`) implementing the complete JSON-in / JSON-out contract for desktop IPC and mobile Chaquopy.
-- **Headless Sidecar Daemon (`daemon.py`):** Communicates with host applications over newline-delimited JSON (NDJSON) via standard input/output. Bundled with PyInstaller for production distribution (end users never need Python installed).
-- **Desktop UI (`apps/desktop`):** Tauri v2 (Rust shell) + Vite + React 19 + TypeScript + Tailwind CSS v4.
-- **Web App & Viewer (`apps/web`):** Static Single Page Application (SPA) on Cloudflare Pages. React 19 + TypeScript + Tailwind CSS v4 + WebAssembly (`hash-wasm` & `libsodium-wrappers-sumo`).
-- **Mobile UI (`apps/android`):** React Native + Chaquopy (Python core embedded on Android).
-- **Identity & Zero Custody:** Direct OAuth2 with user's Google account. No SecureWorkspace backend server, custodian accounts, or hosted databases.
+```text
+┌────────────────────────────────────────────────────────┐
+│                   Zero-Trust Boundary                  │
+└───────────────────────────┬────────────────────────────┘
+                            │
+            ┌───────────────┴───────────────┐
+            │                               │
+            ▼                               ▼
+ ┌──────────────────────┐        ┌──────────────────────┐
+ │     Desktop App      │        │   Web App / Viewer   │
+ │   (Tauri v2 + Rust)  │        │ (Cloudflare Pages SPA)│
+ └──────────┬───────────┘        └──────────┬───────────┘
+            │                               │
+            ▼                               ▼
+ ┌──────────────────────┐        ┌──────────────────────┐
+ │ Python Sidecar Core  │        │   WASM Web Worker    │
+ │ (Argon2id, SQLite,   │        │ (Argon2id, libsodium │
+ │  PyNaCl, Drive API)  │        │  XChaCha20-Poly1305) │
+ └──────────┬───────────┘        └──────────┬───────────┘
+            │                               │
+            └───────────────┬───────────────┘
+                            ▼
+              ┌───────────────────────────┐
+              │    Google Drive Storage   │
+              │  (Ciphertext & Manifests) │
+              │                           │
+              │  SecureWorkspace/         │
+              │  └── <WorkspaceName>/     │
+              │      ├── workspace.header │
+              │      ├── HEAD             │
+              │      ├── versions/        │
+              │      └── objects/         │
+              └───────────────────────────┘
+```
+
+---
+
+## User Guide & Walkthrough
+
+### 1. Using the Desktop App (Windows Authoring & Sync)
+
+1. **Install:** Download and run `SecureWorkspace_0.1.0_x64-setup.exe` from [GitHub Releases](https://github.com/Dadiya-Harsh/SecureWorkspace/releases/latest).
+2. **Create a Workspace:**
+   - Choose a local folder for your workspace (e.g. `D:\PersonalVault`).
+   - Set a strong master password (used for daily unlocking).
+   - Write down or save your **24-word recovery phrase** (used for emergency recovery or web access).
+   - Complete the quick 3-word verification drill.
+3. **Add Files:** Drop any sensitive documents (spreadsheets, agreements, PDFs, images) into your workspace directory.
+4. **Connect Google Drive:**
+   - Click **Connect Google Drive** in the sidebar or top bar.
+   - Authorize through your browser with the Google OAuth consent popup.
+5. **Sync / Push:**
+   - Click **Push** (with an optional commit message).
+   - Your files are encrypted locally and uploaded to `SecureWorkspace/<WorkspaceName>/` in your Google Drive.
+
+---
+
+### 2. Using the Web Viewer (Instant Read-Only Decryption)
+
+1. **Open the Web App:** Visit [https://secureworkspace.harshdadiya.in/viewer](https://secureworkspace.harshdadiya.in/viewer).
+2. **Connect Google Drive:** Click **Continue with Google** and select your Google account.
+3. **Select Workspace:** If you have multiple workspaces, choose the one you want to view from the workspace selector.
+4. **Unlock:**
+   - **With Password:** Enter your master password.
+   - **With Recovery Key:** Or toggle to paste your 24-word recovery phrase.
+   - Key derivation runs locally in browser RAM via Argon2id WebAssembly.
+5. **Explore & Preview:**
+   - Browse your folder hierarchy and version history.
+   - Click any document to preview it live in memory without writing decrypted plaintext to disk.
+   - Auto-lock automatically purges keys from browser memory after inactivity.
 
 ---
 
 ## Repository Structure
 
 ```text
-secureworkspace/
-├── core/secureworkspace_core/
-│   ├── auth/                # Google OAuth 2.0 InstalledAppFlow, token refresh, discovery
-│   ├── crypto/              # BIP-39 wordlist & recovery, Argon2id KDF, key wrapping, SecretStream
-│   ├── storage/             # StorageAdapter interface, MockStorageAdapter, production GoogleDriveStorageAdapter
-│   ├── sync/                # Version manifests, status engine, pull, push, revert, snapshots
-│   ├── workspace/           # SWH1 header, catalog, zero-plaintext SQLite DB, change detector, temp manager
-│   ├── api.py               # Unified JSON-in / JSON-out facade (Chaquopy & daemon dispatch)
-│   └── daemon.py            # Headless NDJSON IPC daemon for desktop & CLI hosts
+SecureWorkspace/
+├── core/secureworkspace_core/     # Unified Python Cryptography & Sync Core
+│   ├── auth/                      # Google OAuth 2.0 InstalledAppFlow & token lifecycle
+│   ├── crypto/                    # BIP-39 recovery, Argon2id KDF, SecretStream envelopes
+│   ├── storage/                   # StorageAdapter interface, GoogleDriveStorageAdapter
+│   ├── sync/                      # Version manifests, PushEngine, PullEngine, StatusEngine
+│   ├── workspace/                 # SWH1 header, catalog, WAL SQLite metadata engine
+│   ├── api.py                     # Unified JSON-RPC API facade
+│   └── daemon.py                  # Headless NDJSON IPC sidecar daemon
 ├── apps/
-│   ├── desktop/             # Tauri v2 + React 19 + TypeScript + Tailwind CSS desktop app
-│   │   ├── src/             # React views: Wizard, Dashboard, Files, Diverged Modal, Settings
-│   │   └── src-tauri/       # Rust shell & daemon IPC manager (daemon.rs, lib.rs)
-│   ├── web/                 # React 19 + TS + Tailwind v4 + WASM client-side reader (Phase 6)
-│   └── android/             # React Native + Chaquopy + Kotlin native bridge (Phase 7)
-├── google outh clients/     # OAuth client configuration files (gitignored)
-│   ├── client_secret_desktop.json  # Desktop OAuth Client (Installed App)
-│   └── WEB_CLIENT_ID.json          # Web App OAuth Client (SPA)
-├── specs/
-│   └── encryption-format/   # Formal specification and test_vectors.json
-├── spikes/                  # Phase 0 validation spikes (Desktop crypto, Chaquopy, Drive loopback)
-├── tests/
-│   ├── unit/                # 90+ fast deterministic unit tests (crypto, header, db, sync, daemon, oauth)
-│   ├── integration/         # Multi-device sync lifecycle & live Google Drive roundtrip tests
-│   └── vectors/             # Published test vector verification
-└── docs/                    # PRD, specs, and implementation roadmaps (gitignored)
+│   ├── desktop/                   # Native Windows Desktop App (Tauri v2 + React 19 + TypeScript)
+│   │   ├── src/                   # React views: Wizard, Dashboard, File Explorer, Sync
+│   │   └── src-tauri/             # Rust shell & Python sidecar manager
+│   └── web/                       # Cloudflare Pages Web App & In-Browser Viewer
+│       ├── src/crypto/            # WASM Argon2id worker, pure-TS BIP-39 parser, XChaCha20
+│       ├── src/drive/             # Google Identity Services (GIS) & Drive API client
+│       ├── src/components/        # Landing page, Workspace selector, Document viewers
+│       └── public/                # Branding assets, icons, security headers
+├── branding/                      # Official brand assets (Windows icon.ico, SVG marks & logos)
+├── specs/                         # Cryptographic specification & published test_vectors.json
+└── scripts/
+    ├── build_desktop.ps1          # Clean build script for standalone Windows desktop installers
+    └── bundle_daemon.py           # PyInstaller bundler for headless Python daemon sidecar
 ```
 
 ---
 
-## Google Cloud Console Setup Guide
+## Building from Source
 
-To connect SecureWorkspace to Google Drive, set up a project in Google Cloud Console:
+### Prerequisites
+- Node.js 22+ & npm
+- Python 3.12+ (in virtualenv `.venv`)
+- Rust toolchain (`cargo`, `rustc`) for Tauri desktop builds
 
-### 1. Create a Google Cloud Project & Enable APIs
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a new project named **SecureWorkspace** (or your preferred name).
-3. In the sidebar, navigate to **APIs & Services > Library**.
-4. Search for **Google Drive API** and click **Enable**.
-
-### 2. Configure OAuth Consent Screen
-1. Go to **APIs & Services > OAuth consent screen**.
-2. Select **External** user type and click **Create**.
-3. Fill in:
-   - **App Name:** `SecureWorkspace` (or `Cyber Shield Vault`)
-   - **User support email:** Your email address
-   - **Developer contact information:** Your email address
-4. On the **Scopes** page, add the following scopes:
-   - `https://www.googleapis.com/auth/drive.file` *(Restricted access strictly to files created/opened by this app)*
-   - `https://www.googleapis.com/auth/userinfo.email` *(Used to display connected user badge)*
-   - `openid`
-5. On the **Test Users** page, add your Google account email to allow login while in development.
-
-### 3. Create OAuth Credentials
-
-You will create two separate OAuth 2.0 Client IDs:
-
-#### A. Desktop Client ID (for Tauri Desktop App):
-1. Go to **APIs & Services > Credentials > Create Credentials > OAuth client ID**.
-2. Select Application type: **Desktop app**.
-3. Name it: `SecureWorkspace Desktop`.
-4. Click **Create**, then click **Download JSON**.
-5. Save this file to:
-   ```text
-   google outh clients/client_secret_desktop.json
-   ```
-   *(This folder is `.gitignored` to prevent committing it to GitHub).*
-
-#### B. Web Client ID (for Web App & Read-Only Viewer):
-1. In **Credentials**, click **Create Credentials > OAuth client ID**.
-2. Select Application type: **Web application**.
-3. Name it: `SecureWorkspace Web`.
-4. Under **Authorized JavaScript origins**, add:
-   - `http://localhost:5173` *(for local Vite dev)*
-   - `https://<your-subdomain>.harshdadiya.in` *(for Cloudflare Pages production)*
-5. Under **Authorized redirect URIs**, add:
-   - `http://localhost:5173`
-   - `https://<your-subdomain>.harshdadiya.in`
-6. Click **Create** and download the JSON as `google outh clients/WEB_CLIENT_ID.json`.
-
----
-
-## Running the Applications
-
-### 1. Desktop App (Tauri + React 19 + Python Daemon)
+### 1. Build the Desktop App & Windows Installers
+Run the automated clean build script (cleans stale caches, re-bundles the Python daemon fresh from source, and compiles the Tauri installers):
 ```powershell
-cd apps/desktop
-npm install
-npm run tauri dev
+.\scripts\build_desktop.ps1
 ```
+Output installers will be placed in:
+- Setup executable: `apps/desktop/src-tauri/target/release/bundle/nsis/SecureWorkspace_0.1.0_x64-setup.exe`
+- MSI installer: `apps/desktop/src-tauri/target/release/bundle/msi/SecureWorkspace_0.1.0_x64_en-US.msi`
 
-### 2. Web App (Landing Page + In-Browser Viewer)
+### 2. Build the Web App
 ```powershell
 cd apps/web
 npm install
-npm run dev
+npm run build
 ```
-Open **`http://localhost:5173`** in your browser.
+Output static assets will be in `apps/web/dist/`.
 
 ### 3. Run Automated Tests
 ```powershell
-# Run all unit and cryptographic test vectors
-.venv\Scripts\pytest tests\unit tests\vectors -v
+# Python Core & Cryptographic Parity Tests (19 tests)
+.venv\Scripts\pytest tests/unit -v
+
+# Web App WASM Crypto Parity Tests (5 tests)
+npm --prefix apps/web test
 ```
 
 ---
 
-## Build Time vs. Runtime Credentials FAQ
+## Deployment & Production Hosting
 
-### **Q: Do we need user credentials when building the app?**
-**No. Absolutely not.**
+The web app is deployed on **Cloudflare Pages / Workers**:
 
-| Environment | What Is Needed | Are Secret User Credentials Required? |
-| :--- | :--- | :--- |
-| **Build Time** (`npm run build`, `scripts/build_desktop.ps1`) | Compiles TypeScript, CSS, Rust shell, and freezes sidecar daemon. | **NO.** You never need user credentials, passwords, or personal tokens to build. |
-| **Desktop Client Secret** (`client_secret_desktop.json`) | Public OAuth Client ID registration from Google Cloud Console. | According to RFC 8252 (OAuth 2.0 for Native Apps), desktop apps are *public clients*. For developers, this file lives in `google outh clients/` (gitignored). When creating release builds with `scripts/bundle_daemon.py`, it is frozen into the daemon binary so end users never have to configure it. |
-| **Web Client ID** (`WEB_CLIENT_ID.json`) | Public Web Client ID from Google Cloud Console. | Injected at build time via `VITE_GOOGLE_CLIENT_ID`. Web SPAs do **not** use or bundle client secrets; Google validates requests via whitelisted Authorized Origins. |
-| **Runtime User Data** (`credentials.json`) | Generated only when the user logs into their Google account. | Stored in the user's OS profile (`%LOCALAPPDATA%\SecureWorkspace\credentials.json`). It is created strictly at runtime and deleted on logout. |
+- **Domain:** `https://secureworkspace.harshdadiya.in`
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Root Directory:** `apps/web`
 
----
-
-## Implementation Roadmap
-
-- [x] **Phase 0: Validation Spikes** (Desktop Argon2id + SecretStream, Android Chaquopy 17.2 ARM64 cross-device decrypt, Google Drive OAuth loopback).
-- [x] **Phase 1: Core Encryption Library** (BIP-39 24-word recovery, dual-path key wrapping, fixed 246-byte `SWH1` header, 64 KB chunked `SWF1` streaming, encrypted catalog `SWC1`, formal test vectors).
-- [x] **Phase 2: Drive Storage Adapter** (Abstract `StorageAdapter`, `MockStorageAdapter`, production `GoogleDriveStorageAdapter` with 256 KiB resumable uploads, exponential backoff with jitter, and live E2E verification).
-- [x] **Phase 3: Workspace & SQLite Metadata Engine** (WAL mode SQLite, zero-plaintext paths at rest with `SecretBox(meta_key)` and keyed BLAKE2b digests, layout & process lock manager, two-tier change detector, safe temp manager, database rebuilder).
-- [x] **Phase 4: Git-Style Pull, Push and Revert** (Version manifests in `versions/`, `HEAD` version tracking, read-only `status()`, `pull()` with safety snapshots, `push()` with atomic race pre-check and mass-deletion guard, `force_push()`, and `revert()`).
-- [x] **Phase 5: Desktop App & Packaging** (Tauri v2 Rust bridge, React 19 UI with 14 components/views, desktop Google OAuth loopback flow, NSIS Windows installer bundling).
-- [ ] **Phase 6: Web App & Zero-Server Read-Only Viewer** (Product landing page, Google Identity Services OAuth, in-browser Argon2id WASM in Web Worker, 64 KB chunk SecretStream decryptor, Mozilla PDF.js, SheetJS Excel, PapaParse CSV, docx-preview Word, Prism.js code viewer, Cloudflare Pages on custom subdomain).
-- [ ] **Phase 7: Android App** (React Native UI, Kotlin Chaquopy bridge, Android Keystore wrapped key protection, share sheet / file picker integration).
-- [ ] **Phase 8: External Backups & History Retention** (90-day version retention pruning, external HDD encrypted snapshot export, offline recovery drill).
-- [ ] **Phase 9: Security Hardening & Release** (Formal crypto audit, fuzzing, dependency audit, open-source packaging).
+### Google Cloud OAuth Configuration
+For production deployments, the domain must be whitelisted in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+1. Under your **OAuth 2.0 Web Client ID**, add your domain to **Authorized JavaScript origins**:
+   - `https://secureworkspace.harshdadiya.in`
+2. Since the app only requests the least-privilege `https://www.googleapis.com/auth/drive.file` scope, users authorize access only to files created by SecureWorkspace.
 
 ---
 
-## License
+## Implementation Status
 
-Open Source (License to be determined prior to public 1.0 release).
+- [x] **Phase 0: Architecture Spikes** (Argon2id + SecretStream, cross-platform decryption).
+- [x] **Phase 1: Core Cryptography** (Fixed 246-byte `SWH1` header, 64 KB `SWF1` SecretStream, dual-path key wrapping, BIP-39 recovery).
+- [x] **Phase 2: Storage Layer** (Resumable Google Drive uploads, retry backoff, multi-workspace subfolder isolation).
+- [x] **Phase 3: SQLite Metadata Engine** (WAL mode SQLite, encrypted paths at rest with keyed BLAKE2b digests, change detector).
+- [x] **Phase 4: Git-Style Sync Engine** (Push with atomic HEAD checks, non-destructive pull with safety snapshots, historical rollbacks).
+- [x] **Phase 5: Desktop Application** (Tauri v2 + React 19, official branding overhaul, Windows installer packaging).
+- [x] **Phase 6: Web App & Zero-Server Viewer** (Product landing page, Google Identity Services OAuth, Web Worker WASM decryption, Word/Excel/PDF/CSV viewers, Cloudflare custom domain).
+- [ ] **Phase 7: Mobile App** (Android with embedded Chaquopy Python core).
+- [ ] **Phase 8: Offline Backups** (Encrypted external drive export and recovery drills).
+
+---
+
+## Security & Verification
+
+All cryptographic operations strictly adhere to [specs/encryption-format/spec.md](specs/encryption-format/spec.md) and verify bit-for-bit against [specs/encryption-format/test_vectors.json](specs/encryption-format/test_vectors.json).
+
+*Note: SecureWorkspace is open-source software under active development. Ensure you retain your 24-word recovery phrase in a secure offline location.*

@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# SecureWorkspace Web App & Zero-Server Viewer
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+This directory contains the production web application and zero-server client-side document viewer for **SecureWorkspace**, deployed live at [https://secureworkspace.harshdadiya.in](https://secureworkspace.harshdadiya.in).
 
-Currently, two official plugins are available:
+## Key Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Zero Server / Zero Custody:** Operates 100% in the user's browser. No private keys, passwords, or decrypted document plaintext ever leave the user's device RAM.
+- **Client-Side Cryptography:** Argon2id Key Derivation Function (KDF) and XChaCha20-Poly1305 multi-chunk SecretStream (`SWF1`) decryption run inside an isolated Web Worker via WebAssembly (`libsodium-wrappers-sumo` & `hash-wasm`).
+- **Google Identity Services (GIS):** Connects to Google Drive using the least-privilege `drive.file` scope. Only accesses workspaces and files created by SecureWorkspace.
+- **Multi-Workspace Selector:** Auto-discovers all workspaces under `SecureWorkspace/<WorkspaceName>/` in Google Drive, letting users switch between personal and business vaults seamlessly.
+- **Embedded Document Viewers:**
+  - Word Documents (`.docx`) via `docx-preview`
+  - Excel Spreadsheets (`.xlsx`, `.xls`) via `xlsx`
+  - PDF Documents (`.pdf`) via custom embed & SVG rendering
+  - CSV & Delimited Data (`.csv`) via interactive table view
+  - Code & Config (`.ts`, `.py`, `.json`, `.js`) with syntax rendering
+  - Markdown Notes (`.md`) with GFM tables and alerts
+  - Images (`.png`, `.jpg`, `.jpeg`) with in-memory blob URLs
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Install dependencies
+npm install
 
-## Expanding the Oxlint configuration
+# Start local development server (http://localhost:5173)
+npm run dev
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+# Run cryptographic parity test vectors against published spec
+npm test
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+# Build production bundle for Cloudflare Pages / Workers
+npm run build
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Cloudflare Deployment
+
+- **Framework preset:** `Vite`
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+- **Custom Domain:** `secureworkspace.harshdadiya.in`
