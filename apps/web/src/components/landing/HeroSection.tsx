@@ -24,12 +24,20 @@ export const HeroSection: React.FC = () => {
           {/* Subtitle */}
           <p className="text-base sm:text-lg text-[#5A6662] leading-relaxed mb-6 sm:mb-8 max-w-xl">
             Google stores ciphertext only. You keep the password and a 24-word
-            recovery key. We run no server and hold no keys.
+            recovery key. No server stores your data, and we hold no keys.
           </p>
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 mb-4 max-w-md sm:max-w-none">
-            <a href="#download" className="w-full sm:w-auto">
+            <a
+              href="#download"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' });
+                window.history.pushState(null, '', '#download');
+              }}
+              className="w-full sm:w-auto"
+            >
               <button className="w-full sm:w-auto bg-[#0F5C4D] hover:bg-[#0C4B3E] active:bg-[#09392F] text-white px-6 py-3 rounded-lg font-medium text-sm transition-all duration-150 cursor-pointer shadow-xs hover:shadow-sm hover:-translate-y-0.5 text-center">
                 Download for Windows
               </button>

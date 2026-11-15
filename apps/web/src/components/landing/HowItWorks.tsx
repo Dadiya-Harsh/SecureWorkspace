@@ -2,14 +2,14 @@ import React from 'react';
 
 export const HowItWorks: React.FC = () => {
   return (
-    <section className="bg-[#F2F5F2] py-14 sm:py-20 border-y border-[#E2E6E3]/70" id="how-it-works">
+    <section className="bg-[#F2F5F2] py-14 sm:py-20 border-y border-[#E2E6E3]/70 scroll-mt-12" id="how-it-works">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#14201C] tracking-tight">
             How it works
           </h2>
           <span className="hidden sm:inline-block text-xs font-mono text-[#5A6662] uppercase tracking-wider">
-            Client-Side · Deterministic · Zero-Server
+            Client-Side · Deterministic · No Server Stores Your Data
           </span>
         </div>
 

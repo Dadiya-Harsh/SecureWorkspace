@@ -31,6 +31,10 @@
   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--color-mineral);
   color: var(--color-ink);

@@ -191,8 +191,8 @@ export const CiphertextShowcase: React.FC = () => {
           <div className="mt-6 pt-3 border-t border-[#E2E6E3] text-[11px] text-[#5A6662] flex items-start gap-2">
             <Unlock className="w-4 h-4 text-[#0F5C4D] shrink-0 mt-0.5" />
             <span>
-              Decrypted directly in browser RAM with WebAssembly. No files or
-              keys are ever written to browser disk or server storage.
+              Decrypted directly in browser RAM with WebAssembly. No server stores
+              your data, and no files or keys are ever written to browser disk.
             </span>
           </div>
         </div>

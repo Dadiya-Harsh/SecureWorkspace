@@ -55,14 +55,14 @@ export const FeatureGrid: React.FC = () => {
         <div className="space-y-1.5 max-w-xl">
           <div className="inline-flex items-center gap-1.5 text-xs font-mono font-semibold text-[#0F5C4D]">
             <ShieldCheck className="w-4 h-4 text-[#0F5C4D]" />
-            <span>ZERO SERVERS · CLIENT-SIDE WASM</span>
+            <span>NO SERVER STORES YOUR DATA · CLIENT-SIDE WASM</span>
           </div>
           <h3 className="text-base sm:text-lg font-bold text-[#14201C]">
             Read-only web viewer
           </h3>
           <p className="text-sm text-[#5A6662] leading-relaxed">
             Unlock and decrypt spreadsheets, PDFs, Word docs, code, and images in
-            your browser RAM. Nothing is stored on a server.
+            your browser RAM. No server stores your data.
           </p>
         </div>
 

@@ -27,7 +27,7 @@ export const PrivacyPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-[#F2F5F2] border border-[#E2E6E3] text-[#14201C]">
                 <div className="flex items-center gap-2.5">
                   <ServerOff className="w-5 h-5 text-[#0F5C4D] shrink-0" />
-                  <span className="font-semibold text-xs">Zero Backend Servers</span>
+                  <span className="font-semibold text-xs">No Server Stores Your Data</span>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <EyeOff className="w-5 h-5 text-[#0F5C4D] shrink-0" />
@@ -45,9 +45,12 @@ export const PrivacyPage: React.FC = () => {
                 </h2>
                 <p>
                   SecureWorkspace is an open-source, client-side encrypted workspace.
-                  We operate <strong>no intermediary web servers, databases, or API proxies</strong>.
-                  We do not collect personal data, usage metrics, IP addresses, tracking cookies,
-                  or error telemetry. Your files, metadata, and cryptographic keys never reach us.
+                  <strong> No server stores your data.</strong> We operate no proprietary backend
+                  databases, user accounts, or API proxies. The static web application assets are
+                  delivered via Cloudflare's edge network, and file transfers occur directly
+                  between your browser and Google Drive. We do not collect personal data, usage
+                  metrics, tracking cookies, or error telemetry. Your files, metadata, and
+                  cryptographic keys never leave your device unencrypted.
                 </p>
               </section>
 

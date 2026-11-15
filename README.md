@@ -18,7 +18,7 @@ Open-source, client-side encrypted cloud workspace with zero-knowledge architect
   - `pull()`: Downloads remote updates non-destructively, taking automated local safety snapshots of modified files.
   - `revert(version)`: Rolls back entire workspaces or restores individual files from past version snapshots.
 - **Zero-Plaintext Metadata at Rest:** File paths and folder hierarchies are encrypted at rest inside a local WAL-mode SQLite metadata engine. Lookups use keyed BLAKE2b digests (`path_hash`).
-- **Zero-Server In-Browser Web Viewer:** Open and view your encrypted files in any browser on [secureworkspace.harshdadiya.in](https://secureworkspace.harshdadiya.in) without installing desktop software. Decryption runs inside a sandboxed Web Worker via WebAssembly.
+- **Client-Side In-Browser Web Viewer:** Open and view your encrypted files in any browser on [secureworkspace.harshdadiya.in](https://secureworkspace.harshdadiya.in) without installing desktop software (no server stores your data). Decryption runs inside a sandboxed Web Worker via WebAssembly.
 - **Rich Document Viewers:** Direct in-RAM preview for Word documents (`.docx`), Excel spreadsheets (`.xlsx`), PDFs (`.pdf`), CSV tables (`.csv`), Markdown (`.md`), Code files (`.ts`, `.py`, `.json`, `.js`), and images (`.png`, `.jpg`).
 - **Least-Privilege Cloud Storage:** Restricted strictly to Google Drive's `drive.file` scope (the app can only access folders and files it created, never your personal drive contents).
 
@@ -189,7 +189,7 @@ For production deployments, the domain must be whitelisted in [Google Cloud Cons
 - [x] **Phase 3: SQLite Metadata Engine** (WAL mode SQLite, encrypted paths at rest with keyed BLAKE2b digests, change detector).
 - [x] **Phase 4: Git-Style Sync Engine** (Push with atomic HEAD checks, non-destructive pull with safety snapshots, historical rollbacks).
 - [x] **Phase 5: Desktop Application** (Tauri v2 + React 19, official branding overhaul, Windows installer packaging).
-- [x] **Phase 6: Web App & Zero-Server Viewer** (Product landing page, Google Identity Services OAuth, Web Worker WASM decryption, Word/Excel/PDF/CSV viewers, Cloudflare custom domain).
+- [x] **Phase 6: Web App & Client-Side Viewer** (Product landing page, Google Identity Services OAuth, Web Worker WASM decryption, Word/Excel/PDF/CSV viewers, Cloudflare custom domain).
 - [ ] **Phase 7: Mobile App** (Android with embedded Chaquopy Python core).
 - [ ] **Phase 8: Offline Backups** (Encrypted external drive export and recovery drills).
 

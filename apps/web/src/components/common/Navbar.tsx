@@ -8,6 +8,18 @@ export const Navbar: React.FC = () => {
 
   const closeMenu = () => setMobileMenuOpen(false);
 
+  const handleNavAnchor = (id: string) => (e: React.MouseEvent) => {
+    if (location.pathname === '/') {
+      e.preventDefault();
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        window.history.pushState(null, '', `#${id}`);
+      }
+    }
+    closeMenu();
+  };
+
   return (
     <header className="w-full relative z-50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-4 flex items-center justify-between">
@@ -29,6 +41,7 @@ export const Navbar: React.FC = () => {
           <nav className="flex items-center gap-7 text-sm font-medium text-[#14201C]">
             <a
               href="/#how-it-works"
+              onClick={handleNavAnchor('how-it-works')}
               className="hover:text-[#0F5C4D] transition-colors py-1"
             >
               How it works
@@ -43,6 +56,7 @@ export const Navbar: React.FC = () => {
             </Link>
             <a
               href="/#download"
+              onClick={handleNavAnchor('download')}
               className="hover:text-[#0F5C4D] transition-colors py-1"
             >
               Download
@@ -88,7 +102,7 @@ export const Navbar: React.FC = () => {
           <nav className="flex flex-col space-y-3 font-medium text-sm text-[#14201C]">
             <a
               href="/#how-it-works"
-              onClick={closeMenu}
+              onClick={handleNavAnchor('how-it-works')}
               className="py-1.5 hover:text-[#0F5C4D] transition-colors"
             >
               How it works
@@ -102,7 +116,7 @@ export const Navbar: React.FC = () => {
             </Link>
             <a
               href="/#download"
-              onClick={closeMenu}
+              onClick={handleNavAnchor('download')}
               className="py-1.5 hover:text-[#0F5C4D] transition-colors"
             >
               Download for Windows

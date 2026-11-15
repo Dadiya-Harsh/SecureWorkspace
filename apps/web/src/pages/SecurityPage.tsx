@@ -35,7 +35,7 @@ export const SecurityPage: React.FC = () => {
                 <div className="p-4 rounded-xl bg-[#F2F5F2] border border-[#E2E6E3] text-xs space-y-2.5 text-[#14201C]">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-[#0F5C4D] shrink-0 mt-0.5" />
-                    <span><strong>No Intermediary Server:</strong> We operate zero servers or API proxies between you and Google Drive.</span>
+                    <span><strong>No Server Stores Your Data:</strong> We operate no proprietary databases, backend vaults, or API proxies.</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-[#0F5C4D] shrink-0 mt-0.5" />

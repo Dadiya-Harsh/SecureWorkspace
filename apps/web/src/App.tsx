@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ScrollToAnchor } from './components/common/ScrollToAnchor';
 import { LandingPage } from './pages/LandingPage';
 import { ViewerPage } from './pages/ViewerPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -9,6 +10,7 @@ import { ContactPage } from './pages/ContactPage';
 export function App() {
   return (
     <BrowserRouter>
+      <ScrollToAnchor />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/viewer" element={<ViewerPage />} />
