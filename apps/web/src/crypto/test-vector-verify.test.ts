@@ -50,6 +50,14 @@ describe('Cryptographic Engine & Test Vectors Parity', () => {
     const entropy = recoveryPhraseToEntropy(testVectors.kdf.recovery_phrase);
     expect(bytesToHex(entropy)).toBe(testVectors.kdf.recovery_entropy_hex);
 
+    // Also test numbered / messy pasted phrases
+    const numberedPhrase = testVectors.kdf.recovery_phrase
+      .split(' ')
+      .map((w, i) => `${i + 1}. ${w}`)
+      .join('\n');
+    const numberedEntropy = recoveryPhraseToEntropy(numberedPhrase);
+    expect(bytesToHex(numberedEntropy)).toBe(testVectors.kdf.recovery_entropy_hex);
+
     const salt = hexToBytes(testVectors.kdf.recovery_salt_hex);
     const kek = await deriveKekFromRecoveryEntropy(
       entropy,
