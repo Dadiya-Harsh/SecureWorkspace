@@ -2,57 +2,100 @@ import React from 'react';
 
 export const HowItWorks: React.FC = () => {
   return (
-    <section className="bg-[#F2F5F2] py-14 sm:py-20 border-y border-[#E2E6E3]/70 scroll-mt-12" id="how-it-works">
+    <section className="bg-white py-16 sm:py-24 border-y border-[#E2E6E3] scroll-mt-12" id="how-it-works">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-[#14201C] tracking-tight">
-            How it works
-          </h2>
-          <span className="hidden sm:inline-block text-xs font-mono text-[#5A6662] uppercase tracking-wider">
-            Client-Side · Deterministic · No Server Stores Your Data
-          </span>
+        <h2 className="text-3xl font-bold text-[#14201C] tracking-tight mb-12">
+          How it works
+        </h2>
+
+        {/* 3-Step Flow Diagram */}
+        <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center mb-12">
+          {/* Node 1: Your PC */}
+          <div className="md:col-span-3 bg-white rounded-xl p-5 border border-[#CAD2CD] shadow-2xs">
+            <div className="text-[10px] font-mono font-semibold tracking-wider text-[#5A6662] uppercase mb-1">
+              YOUR PC
+            </div>
+            <div className="text-sm font-bold text-[#14201C] mb-1 font-mono">
+              tax-return.xlsx
+            </div>
+            <div className="text-xs text-[#5A6662]">
+              Readable only here
+            </div>
+          </div>
+
+          {/* Connector 1: Locked on your PC */}
+          <div className="md:col-span-1 flex flex-col items-center justify-center py-2 md:py-0">
+            <div className="w-full relative flex items-center justify-center">
+              <div className="hidden md:block w-full border-t-2 border-dashed border-[#CAD2CD]"></div>
+              <span className="md:absolute text-[10px] font-mono font-medium text-[#5A6662] bg-white px-2 py-0.5 whitespace-nowrap text-center">
+                Locked on your PC
+              </span>
+            </div>
+          </div>
+
+          {/* Node 2: Your Google Drive */}
+          <div className="md:col-span-3 bg-white rounded-xl p-5 border border-[#CAD2CD] shadow-2xs">
+            <div className="text-[10px] font-mono font-semibold tracking-wider text-[#5A6662] uppercase mb-1">
+              YOUR GOOGLE DRIVE
+            </div>
+            <div className="text-sm font-bold text-[#14201C] mb-1 font-mono truncate">
+              objects/9f3a...c1.bin
+            </div>
+            <div className="text-xs text-[#5A6662]">
+              Random-looking to Google
+            </div>
+          </div>
+
+          {/* Connector 2: Unlocked in your browser */}
+          <div className="md:col-span-1 flex flex-col items-center justify-center py-2 md:py-0">
+            <div className="w-full relative flex items-center justify-center">
+              <div className="hidden md:block w-full border-t-2 border-dashed border-[#CAD2CD]"></div>
+              <span className="md:absolute text-[10px] font-mono font-medium text-[#5A6662] bg-white px-2 py-0.5 whitespace-nowrap text-center">
+                Unlocked in your browser
+              </span>
+            </div>
+          </div>
+
+          {/* Node 3: Browser Tab */}
+          <div className="md:col-span-3 bg-white rounded-xl p-5 border border-[#CAD2CD] shadow-2xs">
+            <div className="text-[10px] font-mono font-semibold tracking-wider text-[#5A6662] uppercase mb-1">
+              BROWSER TAB
+            </div>
+            <div className="text-sm font-bold text-[#14201C] mb-1">
+              Read-only view
+            </div>
+            <div className="text-xs text-[#5A6662]">
+              Gone when you lock
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-          {/* Step 1 */}
-          <div className="p-6 rounded-2xl bg-white/70 hover:bg-white border border-[#E2E6E3]/80 hover:border-[#CAD2CD] transition-all duration-200 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 space-y-2.5">
-            <div className="font-mono text-xs font-bold text-[#0F5C4D] bg-[#E6F4F1] inline-block px-2 py-0.5 rounded">
-              STEP 01
-            </div>
-            <h3 className="text-base font-bold text-[#14201C]">
+        {/* 3 Step Explanations Underneath */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-4">
+          <div>
+            <h3 className="text-sm font-bold text-[#14201C] mb-1.5">
               1. Create a vault
             </h3>
-            <p className="text-sm text-[#5A6662] leading-relaxed">
-              Pick a local folder, set a master password, and save your 24-word
-              recovery key.
+            <p className="text-xs sm:text-sm text-[#5A6662] leading-relaxed">
+              Pick a folder, set a password, save your recovery key.
             </p>
           </div>
 
-          {/* Step 2 */}
-          <div className="p-6 rounded-2xl bg-white/70 hover:bg-white border border-[#E2E6E3]/80 hover:border-[#CAD2CD] transition-all duration-200 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 space-y-2.5">
-            <div className="font-mono text-xs font-bold text-[#0F5C4D] bg-[#E6F4F1] inline-block px-2 py-0.5 rounded">
-              STEP 02
-            </div>
-            <h3 className="text-base font-bold text-[#14201C]">
+          <div>
+            <h3 className="text-sm font-bold text-[#14201C] mb-1.5">
               2. Push to your Drive
             </h3>
-            <p className="text-sm text-[#5A6662] leading-relaxed">
-              Files are encrypted with XChaCha20-Poly1305 on your PC. Each push is
-              an immutable numbered version.
+            <p className="text-xs sm:text-sm text-[#5A6662] leading-relaxed">
+              Each push is a numbered version you can go back to.
             </p>
           </div>
 
-          {/* Step 3 */}
-          <div className="p-6 rounded-2xl bg-white/70 hover:bg-white border border-[#E2E6E3]/80 hover:border-[#CAD2CD] transition-all duration-200 shadow-2xs hover:shadow-xs hover:-translate-y-0.5 space-y-2.5">
-            <div className="font-mono text-xs font-bold text-[#0F5C4D] bg-[#E6F4F1] inline-block px-2 py-0.5 rounded">
-              STEP 03
-            </div>
-            <h3 className="text-base font-bold text-[#14201C]">
+          <div>
+            <h3 className="text-sm font-bold text-[#14201C] mb-1.5">
               3. Read anywhere
             </h3>
-            <p className="text-sm text-[#5A6662] leading-relaxed">
-              Pull on another device, or view in the browser with WebAssembly.
-              Edits stay on the desktop app.
+            <p className="text-xs sm:text-sm text-[#5A6662] leading-relaxed">
+              Pull on another PC or open the web viewer. Edits stay in the desktop app.
             </p>
           </div>
         </div>

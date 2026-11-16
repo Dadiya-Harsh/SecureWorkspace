@@ -15,6 +15,8 @@ import {
   RemoteVersion,
   FileHistoryVersion,
   SafetySnapshotItem,
+  RemoteVaultItem,
+  JoinWorkspaceResult,
 } from "./types";
 
 class SecureWorkspaceClient {
@@ -77,6 +79,24 @@ class SecureWorkspaceClient {
 
   async lock(): Promise<APIResponse<{ locked: boolean }>> {
     return this.dispatch("workspace_lock");
+  }
+
+  async findRemoteVaults(): Promise<APIResponse<{ vaults: RemoteVaultItem[] }>> {
+    return this.dispatch("find_remote_vaults");
+  }
+
+  async joinFromDrive(
+    local_dest_path: string,
+    password_or_recovery_phrase: string,
+    workspace_subfolder?: string,
+    header_file_id?: string
+  ): Promise<APIResponse<JoinWorkspaceResult>> {
+    return this.dispatch("workspace_join_from_drive", {
+      local_dest_path,
+      password_or_recovery_phrase,
+      workspace_subfolder,
+      header_file_id,
+    });
   }
 
   async getStatus(quick: boolean = false): Promise<APIResponse<SyncStatusData>> {
@@ -251,6 +271,18 @@ class SecureWorkspaceClient {
     return this.dispatch("google_auth_logout");
   }
 
+  async changePassword(new_password: string): Promise<APIResponse<any>> {
+    return this.dispatch("change_password", { new_password });
+  }
+
+  async regenerateRecoveryPhrase(): Promise<APIResponse<{ new_recovery_phrase: string }>> {
+    return this.dispatch("regenerate_recovery_phrase");
+  }
+
+  async exportDiagnosticLogs(): Promise<APIResponse<{ diagnostic_report: any }>> {
+    return this.dispatch("export_diagnostic_logs");
+  }
+
   // --- Browser Dev Mock Provider ---
   private async devMockDispatch<T>(method: string, _params: Record<string, any>, id: string): Promise<APIResponse<T>> {
     await new Promise((r) => setTimeout(r, 120));
@@ -355,32 +387,56 @@ class SecureWorkspaceClient {
       case "workspace_lock":
         return { success: true, id, data: { locked: true } as any };
 
-      case "google_auth_status":
+      case "google_auth_status": {
+        const isAuth = localStorage.getItem("sw_mock_drive_auth") === "true";
+        const email = localStorage.getItem("sw_mock_drive_email") || "";
         return {
           success: true,
           id,
           data: {
-            authenticated: true,
-            email: "name@gmail.com",
-            name: "Harsh",
+            authenticated: isAuth,
+            email: isAuth ? email : "",
+            name: isAuth ? "Demo User" : "",
             picture: "",
-            storage_connected: true,
+            storage_connected: isAuth,
           } as any,
         };
+      }
 
-      case "google_auth_login":
+      case "google_auth_login": {
+        const currentEmail = localStorage.getItem("sw_mock_drive_email") || "";
+        let finalEmail = (_params as any)?.email;
+        if (!finalEmail && typeof window !== "undefined") {
+          const input = window.prompt(
+            "Enter Google Account email to simulate OAuth login:",
+            currentEmail || "harshdadiya@gmail.com"
+          );
+          if (input === null) {
+            return {
+              success: false,
+              error_code: "USER_CANCELLED",
+              message: "Google login cancelled by user.",
+              id,
+            };
+          }
+          finalEmail = input.trim();
+        }
+        finalEmail = finalEmail || "harshdadiya@gmail.com";
+        localStorage.setItem("sw_mock_drive_auth", "true");
+        localStorage.setItem("sw_mock_drive_email", finalEmail);
         return {
           success: true,
           id,
           message: "Google Drive authenticated successfully.",
           data: {
             authenticated: true,
-            email: "name@gmail.com",
-            name: "Harsh",
+            email: finalEmail,
+            name: finalEmail.split("@")[0],
             picture: "",
             storage_connected: true,
           } as any,
         };
+      }
 
       case "workspace_unlock":
         return {
@@ -390,11 +446,89 @@ class SecureWorkspaceClient {
           id,
         };
 
-      case "google_auth_logout":
+      case "google_auth_logout": {
+        localStorage.removeItem("sw_mock_drive_auth");
+        localStorage.removeItem("sw_mock_drive_email");
         return {
           success: true,
           id,
           data: { authenticated: false, storage_connected: false } as any,
+        };
+      }
+
+      case "find_remote_vaults":
+        return {
+          success: true,
+          id,
+          data: {
+            vaults: [
+              {
+                folder_id: "mock-folder-1",
+                folder_name: "Personal",
+                header_file_id: "mock-header-1",
+                modified_time: new Date().toISOString(),
+              },
+            ],
+          } as any,
+        };
+
+      case "workspace_join_from_drive":
+        return {
+          success: true,
+          id,
+          message: "Successfully joined workspace 'Personal' from Google Drive.",
+          data: {
+            workspace_id: "mock-joined-ws-id",
+            name: (_params as any)?.workspace_subfolder || "Personal",
+            workspace_path: (_params as any)?.local_dest_path || "C:\\Users\\User\\Documents\\Personal",
+            pulled_files: 5,
+            version: 1,
+          } as any,
+        };
+
+      case "change_password":
+        return {
+          success: true,
+          id,
+          message: "Master password changed successfully.",
+          data: {} as any,
+        };
+
+      case "regenerate_recovery_phrase":
+        return {
+          success: true,
+          id,
+          message: "New recovery phrase generated and active.",
+          data: {
+            new_recovery_phrase:
+              "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+          } as any,
+        };
+
+      case "export_diagnostic_logs":
+        return {
+          success: true,
+          id,
+          message: "Diagnostic report generated successfully.",
+          data: {
+            diagnostic_report: {
+              timestamp: Date.now(),
+              formatted_time: new Date().toISOString(),
+              system: {
+                os: "Windows",
+                os_release: "11",
+                architecture: "x64",
+                python_version: "3.12.12",
+              },
+              workspace: {
+                is_unlocked: true,
+                storage_connected: true,
+                base_version: 2,
+                remote_head: 2,
+                is_up_to_date: true,
+              },
+            },
+          } as any,
         };
 
       default:

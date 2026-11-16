@@ -2,8 +2,11 @@ import React from 'react';
 import { Navbar } from '../components/common/Navbar';
 import { HeroSection } from '../components/landing/HeroSection';
 import { HowItWorks } from '../components/landing/HowItWorks';
-import { FeatureGrid } from '../components/landing/FeatureGrid';
-import { DownloadBar } from '../components/landing/DownloadBar';
+import { MistakesSection } from '../components/landing/MistakesSection';
+import { DarkViewerBanner } from '../components/landing/DarkViewerBanner';
+import { LimitsCallout } from '../components/landing/LimitsCallout';
+import { FaqSection } from '../components/landing/FaqSection';
+import { BottomCtaBanner } from '../components/landing/BottomCtaBanner';
 import { Footer } from '../components/common/Footer';
 
 export const LandingPage: React.FC = () => {
@@ -14,8 +17,11 @@ export const LandingPage: React.FC = () => {
         <main>
           <HeroSection />
           <HowItWorks />
-          <FeatureGrid />
-          <DownloadBar />
+          <MistakesSection />
+          <DarkViewerBanner />
+          <LimitsCallout />
+          <FaqSection />
+          <BottomCtaBanner />
         </main>
       </div>
       <Footer />

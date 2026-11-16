@@ -1,125 +1,107 @@
 import React from 'react';
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
-import { FileText, AlertTriangle } from 'lucide-react';
 
 export const TermsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#EDF0ED] flex flex-col justify-between selection:bg-[#DCECE6] selection:text-[#0F5C4D]">
       <div>
+        {/* Top Amber Review Banner */}
+        <div className="w-full bg-[#FCE7C5] text-[#593610] text-xs py-2 px-4 sm:px-6 font-medium text-left">
+          Draft for review. Not legal advice. Items in [brackets] must be confirmed before publishing.
+        </div>
+
         <Navbar />
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-14">
-          <div className="bg-white rounded-2xl p-5 sm:p-8 md:p-12 border border-[#E2E6E3] shadow-xs">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#DCECE6] text-[#0F5C4D] text-xs font-medium mb-4">
-              <FileText className="w-3.5 h-3.5" />
-              <span>Legal Terms</span>
-            </div>
 
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#14201C] tracking-tight mb-2">
-              Terms of Service
-            </h1>
-            <p className="text-xs font-mono text-[#5A6662] mb-8 pb-6 border-b border-[#E2E6E3]">
-              Last updated: November 2026 · Licensed under Apache License 2.0
-            </p>
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111816] tracking-tight mb-3">
+            Terms and conditions
+          </h1>
 
-            <div className="space-y-8 text-sm text-[#5A6662] leading-relaxed">
-              <section>
-                <h2 className="text-lg font-bold text-[#14201C] mb-2">
-                  1. Agreement & Open Source License
-                </h2>
-                <p>
-                  By using the SecureWorkspace desktop application, web viewer, or related
-                  services, you agree to these Terms of Service. SecureWorkspace is provided
-                  free and open-source under the{' '}
-                  <a
-                    href="https://github.com/Dadiya-Harsh/SecureWorkspace/blob/main/LICENSE"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#0F5C4D] font-medium hover:underline"
-                  >
-                    Apache License, Version 2.0
-                  </a>.
-                </p>
-              </section>
+          <p className="text-base text-[#5A6662] mb-12">
+            Plain-language terms for a beta, open-source tool.
+          </p>
 
-              {/* Crucial Zero-Knowledge Notice */}
-              <div className="p-5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 space-y-2">
-                <div className="flex items-center gap-2 font-bold text-sm">
-                  <AlertTriangle className="w-4 h-4 text-amber-700" />
-                  <span>Important: Your Sole Responsibility for Master Password and Recovery Key</span>
-                </div>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  SecureWorkspace is built on a <strong>zero-knowledge architecture</strong>.
-                  We do not hold copies of your master password, your recovery phrase, or your encryption keys.
-                  If you lose both your master password and your 24-word recovery key, your encrypted data
-                  cannot be recovered by anyone, including the software authors and contributors.
-                </p>
-              </div>
+          <div className="space-y-10 text-sm text-[#5A6662] leading-relaxed">
+            {/* Beta software */}
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-[#14201C]">
+                Beta software
+              </h2>
+              <p>
+                Provided as is, without warranty. Keep your original files until you have tested a restore.
+              </p>
+            </section>
 
-              <section>
-                <h2 className="text-lg font-bold text-[#14201C] mb-2">
-                  2. User Responsibilities & Key Safety
-                </h2>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>
-                    <strong>Safeguarding Secrets:</strong> You are responsible for maintaining the confidentiality of your master password and securely recording your 24-word recovery phrase.
-                  </li>
-                  <li>
-                    <strong>Device Security:</strong> Because the web viewer decrypts documents inside browser memory, you should only unlock your vault on trusted, malware-free computers.
-                  </li>
-                  <li>
-                    <strong>Third-Party Cloud Terms:</strong> When syncing files to Google Drive, you remain subject to Google's Terms of Service and Acceptable Use Policies.
-                  </li>
-                </ul>
-              </section>
+            {/* Your password and recovery key */}
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-[#14201C]">
+                Your password and recovery key
+              </h2>
+              <p>
+                They are yours alone. We cannot reset or recover them. If you lose both, your data cannot be opened by anyone.
+              </p>
+            </section>
 
-              <section>
-                <h2 className="text-lg font-bold text-[#14201C] mb-2">
-                  3. Disclaimer of Warranties
-                </h2>
-                <p className="uppercase text-xs tracking-wide font-mono text-[#5A6662]">
-                  The software is provided "AS IS", without warranty of any kind, express or
-                  implied, including but not limited to the warranties of merchantability,
-                  fitness for a particular purpose and noninfringement. In no event shall the
-                  authors or copyright holders be liable for any claim, damages or other
-                  liability, whether in an action of contract, tort or otherwise, arising from,
-                  out of or in connection with the software or the use or other dealings in the software.
-                </p>
-              </section>
+            {/* Open source */}
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-[#14201C]">
+                Open source
+              </h2>
+              <p>
+                The code is released under Apache 2.0. The license text governs use of the code.
+              </p>
+            </section>
 
-              <section>
-                <h2 className="text-lg font-bold text-[#14201C] mb-2">
-                  4. Limitation of Liability
-                </h2>
-                <p>
-                  To the maximum extent permitted by applicable law, neither the developers
-                  nor any contributors shall be liable for any direct, indirect, incidental,
-                  special, consequential, or punitive damages resulting from loss of data,
-                  cloud provider outages, corrupted local files, forgotten passwords, or unauthorized
-                  device access.
-                </p>
-              </section>
+            {/* Google services */}
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-[#14201C]">
+                Google services
+              </h2>
+              <p>
+                Your use of Google Drive and Google sign-in is under Google's own terms.
+              </p>
+            </section>
 
-              <section>
-                <h2 className="text-lg font-bold text-[#14201C] mb-2">
-                  5. Modifications & Contact
-                </h2>
-                <p>
-                  We may revise these Terms from time to time. The latest version will always
-                  be posted on this page with the effective date updated. For questions or discussions, please visit our{' '}
-                  <a
-                    href="/contact"
-                    className="text-[#0F5C4D] font-medium hover:underline"
-                  >
-                    Contact & Community Support
-                  </a>{' '}
-                  page.
-                </p>
-              </section>
-            </div>
+            {/* Acceptable use */}
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-[#14201C]">
+                Acceptable use
+              </h2>
+              <p>
+                Do not use the software or the viewer to access data you are not allowed to access.
+              </p>
+            </section>
+
+            {/* Liability */}
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-[#14201C]">
+                Liability
+              </h2>
+              <p>
+                To the extent the law allows, [name] is not liable for lost data or other damages from using the software. [Have this clause reviewed.]
+              </p>
+            </section>
+
+            {/* Changes and contact */}
+            <section className="space-y-2 pt-4 border-t border-[#CAD2CD]">
+              <h2 className="text-lg font-bold text-[#14201C]">
+                Changes and contact
+              </h2>
+              <p>
+                Terms may change; the date is shown at the top.{' '}
+                <a
+                  href="mailto:contact@secureworkspace.local"
+                  className="text-[#0F5C4D] font-medium hover:underline"
+                >
+                  [contact email]
+                </a>
+              </p>
+            </section>
           </div>
         </main>
       </div>
+
       <Footer />
     </div>
   );

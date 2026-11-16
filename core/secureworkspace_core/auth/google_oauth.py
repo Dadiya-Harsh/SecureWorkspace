@@ -221,8 +221,9 @@ class GoogleOAuthManager:
         flow = InstalledAppFlow.from_client_secrets_file(str(secret_file), SCOPES)
         creds = flow.run_local_server(
             port=port,
-            prompt="consent",
+            prompt="select_account consent",
             open_browser=open_browser,
+            authorization_prompt_message="",
             success_message=msg,
         )
 

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { api } from "../api/client";
 import { RemoteVersion, SafetySnapshotItem } from "../api/types";
+import { useToast } from "../context/ToastContext";
 
 interface HistoryViewProps {
   currentVersion: number;
@@ -24,6 +25,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   currentVersion,
   onVersionReverted,
 }) => {
+  const { toast } = useToast();
   const [subTab, setSubTab] = useState<"versions" | "snapshots">("versions");
   const [versions, setVersions] = useState<RemoteVersion[]>([]);
   const [snapshots, setSnapshots] = useState<SafetySnapshotItem[]>([]);
@@ -77,6 +79,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
     try {
       const res = await api.revertWorkspace(ver, true);
       if (res.success) {
+        toast.success(`✓ Workspace rolled back to Version ${ver}. Safety snapshot saved.`);
         setStatusMessage(`✓ Workspace successfully reverted to version ${ver}.`);
         onVersionReverted();
       } else {
@@ -100,6 +103,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
     try {
       const res = await api.restoreFileVersion(filePath, ver);
       if (res.success) {
+        toast.success(`✓ Restored '${filePath}' from Version ${ver}.`);
         setStatusMessage(`✓ Restored '${filePath}' from Version ${ver}.`);
         onVersionReverted();
       } else {
@@ -125,6 +129,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
     try {
       const res = await api.restoreSafetySnapshot(snapshotId);
       if (res.success) {
+        toast.success(`✓ Restored snapshot '${snapshotId}'.`);
         setStatusMessage(`✓ Restored snapshot '${snapshotId}'.`);
         onVersionReverted();
         loadData();
@@ -146,6 +151,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
       const res = await api.deleteSafetySnapshot(snapshotId);
       if (res.success) {
         setSnapshots((prev) => prev.filter((s) => s.snapshot_id !== snapshotId));
+        toast.info("✓ Safety snapshot deleted.");
       }
     } catch (err: any) {
       setErrorMessage(err?.message || "Error deleting snapshot.");

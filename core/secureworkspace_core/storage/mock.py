@@ -6,7 +6,7 @@ Validates folder boundaries, uploads, downloads, listings, and progress reportin
 from datetime import datetime, timezone
 import hashlib
 import os
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 import uuid
 
 from secureworkspace_core.storage.adapter import (
@@ -104,6 +104,10 @@ class MockStorageAdapter(StorageAdapter):
 
     def download_bytes(self, remote_id: str) -> bytes:
         if remote_id not in self._storage:
+            for fid, (meta, data) in self._storage.items():
+                if meta.name == remote_id:
+                    self._verify_boundary(meta)
+                    return data
             raise FileNotFoundOnStorageError(f"File not found on storage: {remote_id}")
         meta, data = self._storage[remote_id]
         self._verify_boundary(meta)
@@ -122,3 +126,15 @@ class MockStorageAdapter(StorageAdapter):
         meta, _ = self._storage[remote_id]
         self._verify_boundary(meta)
         return meta
+
+    def find_remote_vaults(self) -> List[Dict[str, Any]]:
+        results = []
+        for fid, (meta, data) in self._storage.items():
+            if meta.name == "workspace.header":
+                results.append({
+                    "header_file_id": fid,
+                    "folder_id": meta.parent_id,
+                    "folder_name": "Vault",
+                    "modified_time": meta.modified_time,
+                })
+        return results

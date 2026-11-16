@@ -283,6 +283,186 @@ class SecureWorkspaceAPI:
             message=f"Workspace '{header.name}' unlocked successfully.",
         )
 
+    def find_remote_vaults(self) -> Dict[str, Any]:
+        """
+        Discovers existing remote vaults in the connected storage provider.
+        Returns a list of discovered vaults with name and metadata.
+        """
+        if self._storage is None:
+            if self._oauth_manager.is_authenticated():
+                try:
+                    adapter = self._oauth_manager.create_storage_adapter()
+                    self.connect_storage(adapter)
+                except Exception as e:
+                    return error_response(APIErrorCode.STORAGE_NOT_CONNECTED, f"Failed to attach Google Drive storage: {e}")
+            else:
+                return error_response(APIErrorCode.STORAGE_NOT_CONNECTED, "Google Drive is not authenticated. Please log in first.")
+
+        if hasattr(self._storage, "find_remote_vaults"):
+            try:
+                vaults = self._storage.find_remote_vaults()
+                return success_response(data={"vaults": vaults})
+            except Exception as e:
+                return error_response(APIErrorCode.INTERNAL_ERROR, f"Error scanning Google Drive: {e}")
+
+        # Fallback check for other adapters
+        try:
+            files = self._storage.list_files()
+            has_header = any(f.name == self.HEADER_FILENAME for f in files)
+            vaults = [{"folder_name": "Vault", "header_file_id": self.HEADER_FILENAME}] if has_header else []
+            return success_response(data={"vaults": vaults})
+        except Exception as e:
+            return error_response(APIErrorCode.INTERNAL_ERROR, f"Error listing storage: {e}")
+
+    def workspace_join_from_drive(
+        self,
+        local_dest_path: str,
+        password_or_recovery_phrase: str,
+        workspace_subfolder: Optional[str] = None,
+        header_file_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Flow 4.1: Joins and clones an existing encrypted vault from Google Drive to a local device.
+        - Verifies storage is authenticated.
+        - Discovers remote workspace.header.
+        - Validates Master Password or 24-word BIP-39 recovery phrase by unwrapping WMK in RAM.
+        - Initializes local workspace and SQLite database.
+        - Runs PullEngine to download and decrypt all files into local_dest_path.
+        """
+        if self._wmk is not None:
+            return error_response(APIErrorCode.ALREADY_UNLOCKED, "A workspace is already unlocked. Lock it first.")
+
+        if not local_dest_path or not local_dest_path.strip():
+            return error_response(APIErrorCode.INVALID_ARGUMENT, "Please provide a valid destination folder path.")
+
+        ws_dir = Path(local_dest_path.strip()).resolve()
+        header_path = ws_dir / self.HEADER_FILENAME
+        if header_path.is_file():
+            return error_response(
+                APIErrorCode.INVALID_ARGUMENT,
+                f"A workspace already exists at '{ws_dir}'. Use unlock instead.",
+            )
+
+        ws_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            existing = [p for p in ws_dir.iterdir() if p.name not in (".git", ".DS_Store", "Thumbs.db")]
+            if existing:
+                return error_response(
+                    APIErrorCode.INVALID_ARGUMENT,
+                    "Destination directory must be empty to join a workspace.",
+                )
+        except Exception:
+            pass
+
+        # 1. Ensure storage adapter is attached
+        if self._storage is None:
+            if self._oauth_manager.is_authenticated():
+                try:
+                    adapter = self._oauth_manager.create_storage_adapter(workspace_subfolder=workspace_subfolder)
+                    self.connect_storage(adapter)
+                except Exception as e:
+                    return error_response(APIErrorCode.STORAGE_NOT_CONNECTED, f"Failed to attach Google Drive: {e}")
+            else:
+                return error_response(APIErrorCode.STORAGE_NOT_CONNECTED, "Google Drive is not authenticated. Please log in first.")
+        else:
+            if workspace_subfolder and hasattr(self._storage, "workspace_subfolder"):
+                self._storage.workspace_subfolder = workspace_subfolder
+                if hasattr(self._storage, "workspace_folder_id"):
+                    self._storage.workspace_folder_id = None
+
+        # 2. Discover and download workspace.header
+        header_bytes: Optional[bytes] = None
+        target_file_id = header_file_id
+
+        if not target_file_id and hasattr(self._storage, "find_remote_vaults"):
+            vaults = self._storage.find_remote_vaults()
+            if not vaults:
+                return error_response(
+                    "NO_REMOTE_VAULT_FOUND",
+                    "No encrypted vault found in this Google Drive account. Make sure you pushed a vault from your primary computer first.",
+                )
+            if workspace_subfolder:
+                matching = next((v for v in vaults if v.get("folder_name") == workspace_subfolder), None)
+                target = matching or vaults[0]
+            else:
+                target = vaults[0]
+            target_file_id = target.get("header_file_id")
+            if target.get("folder_name") and hasattr(self._storage, "workspace_subfolder"):
+                self._storage.workspace_subfolder = target["folder_name"]
+                if hasattr(self._storage, "workspace_folder_id"):
+                    self._storage.workspace_folder_id = target.get("folder_id")
+
+        try:
+            if target_file_id:
+                header_bytes = self._storage.download_bytes(target_file_id)
+            else:
+                header_bytes = self._storage.download_bytes(self.HEADER_FILENAME)
+        except (FileNotFoundOnStorageError, StorageError) as e:
+            return error_response(
+                "NO_REMOTE_VAULT_FOUND",
+                f"No encrypted workspace.header found on Google Drive: {e}",
+            )
+        except Exception as e:
+            return error_response(APIErrorCode.INTERNAL_ERROR, f"Failed to download remote header: {e}")
+
+        # 3. Parse and decrypt header
+        try:
+            header = WorkspaceHeader.from_bytes(header_bytes)
+        except Exception as e:
+            return error_response(APIErrorCode.INTEGRITY_ERROR, f"Invalid or corrupted workspace header: {e}")
+
+        token = password_or_recovery_phrase.strip()
+        words = token.split()
+        wmk: Optional[bytes] = None
+
+        if len(words) == 24:
+            try:
+                wmk = header.unlock_with_recovery_key(token)
+            except CryptoError:
+                pass
+
+        if wmk is None:
+            try:
+                wmk = header.unlock_with_password(token)
+            except CryptoError:
+                pass
+
+        if wmk is None:
+            return error_response(APIErrorCode.WRONG_PASSWORD, "Incorrect master password or 24-word recovery phrase.")
+
+        # 4. Save local header and initialize workspace manager
+        header_path.write_bytes(header_bytes)
+        meta_key = derive_meta_key(wmk)
+        manager = WorkspaceManager(ws_dir, meta_key=meta_key)
+        try:
+            manager.init_workspace()
+            manager.lock()
+        except WorkspaceLockedError as e:
+            return error_response(APIErrorCode.WORKSPACE_LOCKED, str(e))
+
+        self._workspace_path = ws_dir
+        self._header = header
+        self._wmk = wmk
+        self._meta_key = meta_key
+        self._manager = manager
+        self._init_sync_engines()
+
+        # 5. Execute initial pull to hydrate the working directory
+        pull_res = self.pull(confirm=True, strategy="keep_remote")
+        pulled_files = pull_res.get("data", {}).get("pulled_files", 0) if pull_res.get("success") else 0
+        new_version = pull_res.get("data", {}).get("new_version") or (self._manifest_manager.get_remote_head() if self._manifest_manager else 1)
+
+        return success_response(
+            data={
+                "workspace_id": header.workspace_id.hex(),
+                "name": header.name,
+                "workspace_path": str(ws_dir),
+                "pulled_files": pulled_files,
+                "version": new_version,
+            },
+            message=f"Successfully joined workspace '{header.name}' from Google Drive.",
+        )
+
     def workspace_lock(self) -> Dict[str, Any]:
         """Wipes keys from memory, cleans temporary files, and closes database."""
         if self._manager:
@@ -480,7 +660,8 @@ class SecureWorkspaceAPI:
         norm_dest = normalize_path(dest_rel_path)
         dest = self._manager.root_path / norm_dest
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
+        if src != dest:
+            shutil.copy2(src, dest)
 
         return success_response(
             data={"path": norm_dest, "size": dest.stat().st_size},
@@ -937,6 +1118,50 @@ class SecureWorkspaceAPI:
 
         success = self._manager.delete_safety_snapshot(snapshot_id)
         return success_response(data={"snapshot_id": snapshot_id, "deleted": success})
+
+    def export_diagnostic_logs(self) -> Dict[str, Any]:
+        """
+        Exports a sanitized diagnostic report without private keys, plaintext file contents, or passwords.
+        """
+        import platform
+        import time
+
+        status_data = {}
+        try:
+            status_data = self.status().get("data", {})
+        except Exception:
+            pass
+
+        report = {
+            "timestamp": time.time(),
+            "formatted_time": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+            "system": {
+                "os": platform.system(),
+                "os_release": platform.release(),
+                "os_version": platform.version(),
+                "architecture": platform.machine(),
+                "python_version": platform.python_version(),
+            },
+            "workspace": {
+                "is_unlocked": self._is_unlocked,
+                "workspace_path_configured": bool(self._workspace_path),
+                "storage_connected": self._storage is not None,
+                "base_version": status_data.get("base_version", 0),
+                "remote_head": status_data.get("remote_head", 0),
+                "is_diverged": status_data.get("is_diverged", False),
+                "is_up_to_date": status_data.get("is_up_to_date", True),
+            },
+            "crypto": {
+                "cipher": "libsodium XChaCha20-Poly1305 SecretStream",
+                "kdf": "Argon2id (64MB, 2 iterations)",
+                "recovery": "BIP-39 24 words with checksum",
+            },
+        }
+
+        return success_response(
+            data={"diagnostic_report": report},
+            message="Diagnostic report generated successfully.",
+        )
 
     # -------------------------------------------------------------------------
     # Chaquopy / React Native IPC Dispatcher

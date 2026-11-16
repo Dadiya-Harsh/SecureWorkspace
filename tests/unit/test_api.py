@@ -271,3 +271,65 @@ def test_api_list_files_live_disk_tracking(tmp_path: Path, api: SecureWorkspaceA
 
     api.workspace_lock()
 
+
+def test_workspace_join_from_drive(tmp_path: Path):
+    """
+    Verifies Task 4.1: Joining and cloning an existing vault from remote storage onto a new device.
+    """
+    mock_storage = MockStorageAdapter()
+    ws_dir_a = tmp_path / "device_a_vault"
+    ws_dir_b = tmp_path / "device_b_vault"
+
+    # 1. Device A: Create, add file, push
+    api_a = SecureWorkspaceAPI()
+    api_a.connect_storage(mock_storage)
+    create_res = api_a.workspace_create(str(ws_dir_a), "SyncVault", "StrongPass2026!")
+    assert create_res["success"]
+    rec_phrase = create_res["data"]["recovery_phrase"]
+
+    (ws_dir_a / "document.pdf").write_text("Confidential PDF bytes")
+    api_a.add_file(str(ws_dir_a / "document.pdf"), "document.pdf")
+    push_res = api_a.push("Initial push from Device A")
+    assert push_res["success"]
+    assert push_res["data"]["new_version"] == 1
+    api_a.workspace_lock()
+
+    # 2. Device B: Join from Drive using master password
+    api_b = SecureWorkspaceAPI()
+    api_b.connect_storage(mock_storage)
+
+    # Missing destination fails
+    res_err = api_b.workspace_join_from_drive("", "StrongPass2026!")
+    assert not res_err["success"]
+    assert res_err["error_code"] == APIErrorCode.INVALID_ARGUMENT
+
+    # Wrong password fails
+    res_wrong = api_b.workspace_join_from_drive(str(ws_dir_b), "WrongPassword!")
+    assert not res_wrong["success"]
+    assert res_wrong["error_code"] == APIErrorCode.WRONG_PASSWORD
+
+    # Valid join using password
+    res_join = api_b.workspace_join_from_drive(str(ws_dir_b), "StrongPass2026!")
+    assert res_join["success"]
+    assert res_join["data"]["name"] == "SyncVault"
+    assert res_join["data"]["version"] == 1
+
+    # Verify decrypted file exists locally on Device B
+    assert (ws_dir_b / "document.pdf").is_file()
+    assert (ws_dir_b / "document.pdf").read_text() == "Confidential PDF bytes"
+
+    # Verify Device B session is active and unlocked
+    status_res = api_b.is_unlocked()
+    assert status_res["data"]["is_unlocked"] is True
+    api_b.workspace_lock()
+
+    # 3. Device C: Join from Drive using 24-word recovery phrase
+    ws_dir_c = tmp_path / "device_c_vault"
+    api_c = SecureWorkspaceAPI()
+    api_c.connect_storage(mock_storage)
+    res_join_phrase = api_c.workspace_join_from_drive(str(ws_dir_c), rec_phrase)
+    assert res_join_phrase["success"]
+    assert (ws_dir_c / "document.pdf").is_file()
+    assert (ws_dir_c / "document.pdf").read_text() == "Confidential PDF bytes"
+    api_c.workspace_lock()
+

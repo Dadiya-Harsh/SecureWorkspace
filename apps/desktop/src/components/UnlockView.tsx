@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Lock, ShieldCheck, ChevronDown, FolderOpen, Plus } from "lucide-react";
+import { Lock, ShieldCheck, ChevronDown, FolderOpen, Plus, AlertTriangle, Cloud } from "lucide-react";
 import { RegisteredWorkspace } from "../api/types";
 
 interface UnlockViewProps {
@@ -7,10 +7,12 @@ interface UnlockViewProps {
   accountEmail: string;
   version: number;
   registeredWorkspaces?: RegisteredWorkspace[];
+  isAutoLocked?: boolean;
   onUnlock: (passwordOrRecoveryKey: string) => Promise<boolean>;
   onCreateNewWorkspace: () => void;
   onSelectWorkspace?: (ws: RegisteredWorkspace) => void;
   onOpenExistingWorkspace?: () => void;
+  onJoinFromDrive?: () => void;
 }
 
 export const UnlockView: React.FC<UnlockViewProps> = ({
@@ -18,10 +20,12 @@ export const UnlockView: React.FC<UnlockViewProps> = ({
   accountEmail,
   version,
   registeredWorkspaces = [],
+  isAutoLocked = false,
   onUnlock,
   onCreateNewWorkspace,
   onSelectWorkspace,
   onOpenExistingWorkspace,
+  onJoinFromDrive,
 }) => {
   const [password, setPassword] = useState("");
   const [useRecoveryKey, setUseRecoveryKey] = useState(false);
@@ -149,6 +153,13 @@ export const UnlockView: React.FC<UnlockViewProps> = ({
             )}
           </div>
 
+          {isAutoLocked && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2.5 text-xs font-semibold text-amber-900 animate-in fade-in">
+              <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <span>🔒 Vault locked automatically due to 15 minutes of inactivity.</span>
+            </div>
+          )}
+
           {errorMsg && (
             <div className="p-3 bg-danger-subtle text-danger text-xs font-medium rounded-lg border border-danger/20">
               {errorMsg}
@@ -220,6 +231,16 @@ export const UnlockView: React.FC<UnlockViewProps> = ({
               >
                 <Plus className="w-3.5 h-3.5" /> New workspace
               </button>
+
+              {onJoinFromDrive && (
+                <button
+                  type="button"
+                  onClick={onJoinFromDrive}
+                  className="text-vault-cyan hover:underline font-medium flex items-center gap-1"
+                >
+                  <Cloud className="w-3.5 h-3.5" /> Join from Drive
+                </button>
+              )}
 
               {onOpenExistingWorkspace && (
                 <button

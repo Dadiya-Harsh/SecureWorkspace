@@ -7,6 +7,7 @@ import {
   Unlock,
   Trash2,
   ShieldCheck,
+  Cloud,
 } from "lucide-react";
 import { RegisteredWorkspace } from "../api/types";
 
@@ -16,6 +17,7 @@ interface WorkspacesViewProps {
   onSelectWorkspace: (ws: RegisteredWorkspace) => void;
   onCreateWorkspace: () => void;
   onOpenExistingWorkspace: () => void;
+  onJoinFromDrive?: () => void;
   onLockActiveWorkspace: () => void;
   onRemoveWorkspace: (ws: RegisteredWorkspace) => void;
 }
@@ -26,6 +28,7 @@ export const WorkspacesView: React.FC<WorkspacesViewProps> = ({
   onSelectWorkspace,
   onCreateWorkspace,
   onOpenExistingWorkspace,
+  onJoinFromDrive,
   onLockActiveWorkspace,
   onRemoveWorkspace,
 }) => {
@@ -53,6 +56,15 @@ export const WorkspacesView: React.FC<WorkspacesViewProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {onJoinFromDrive && (
+            <button
+              onClick={onJoinFromDrive}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-vault-cyan/40 text-vault-cyan hover:bg-vault-cyan/10 transition"
+            >
+              <Cloud className="w-4 h-4 text-vault-cyan" />
+              Join from Drive
+            </button>
+          )}
           <button
             onClick={onOpenExistingWorkspace}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border border-line text-ink hover:bg-mineral transition"

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ShieldCheck, Check, Loader2, ArrowDown, ArrowUp, AlertCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Check, ArrowDown, ArrowUp, AlertCircle } from "lucide-react";
 import { Sidebar, NavTab } from "./components/Sidebar";
 import { HeaderBar } from "./components/HeaderBar";
 import { DashboardView } from "./components/DashboardView";
@@ -12,15 +12,25 @@ import { DivergedModal } from "./components/DivergedModal";
 import { UnlockView } from "./components/UnlockView";
 import { CreateWorkspaceWizard } from "./components/CreateWorkspaceWizard";
 import { WelcomeOnboardingView } from "./components/WelcomeOnboardingView";
+import { JoinFromDriveModal } from "./components/JoinFromDriveModal";
+import { SettingsView } from "./components/SettingsView";
 import { api } from "./api/client";
-import { SyncStatusData, WorkspaceFile, RegisteredWorkspace } from "./api/types";
+import { SyncStatusData, WorkspaceFile, RegisteredWorkspace, JoinWorkspaceResult } from "./api/types";
+import { useToast } from "./context/ToastContext";
 
 export function App() {
+  const { showToast, toast } = useToast();
   const [appState, setAppState] = useState<"loading" | "unlocked" | "locked" | "wizard" | "welcome">("loading");
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
   const [isDivergedModalOpen, setIsDivergedModalOpen] = useState(false);
   const [isPushModalOpen, setIsPushModalOpen] = useState(false);
-  const [countdownSeconds, setCountdownSeconds] = useState(14 * 60 + 52); // 14:52
+  const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [autoLockMinutes, setAutoLockMinutes] = useState<number>(() => {
+    return parseInt(localStorage.getItem("sw_autolock_minutes") || "15", 10);
+  });
+  const [countdownSeconds, setCountdownSeconds] = useState(autoLockMinutes > 0 ? autoLockMinutes * 60 : 15 * 60);
+  const [isAutoLocked, setIsAutoLocked] = useState(false);
+  const lastNotifiedRemoteHead = useRef<number>(0);
 
   const [accountName, setAccountName] = useState(() => {
     return localStorage.getItem("sw_workspace_name") || "Vault";
@@ -42,19 +52,10 @@ export function App() {
     localStorage.setItem("sw_registered_workspaces", JSON.stringify(registeredWorkspaces));
   }, [registeredWorkspaces]);
 
-  const [accountEmail, setAccountEmail] = useState<string>("name@gmail.com");
+  const [accountEmail, setAccountEmail] = useState<string>("");
   const [isDriveAuthed, setIsDriveAuthed] = useState<boolean>(false);
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(false);
-  const [authMessage, setAuthMessage] = useState<string>("");
   const [isPulling, setIsPulling] = useState<boolean>(false);
-  const [toast, setToast] = useState<{ message: string; type: "info" | "error" | "success" } | null>(null);
-
-  const showToast = (message: string, type: "info" | "error" | "success" = "info") => {
-    setToast({ message, type });
-    setTimeout(() => {
-      setToast((cur) => (cur?.message === message ? null : cur));
-    }, 4500);
-  };
 
   const [status, setStatus] = useState<SyncStatusData>({
     base_version: 0,
@@ -81,6 +82,13 @@ export function App() {
       ]);
       if (sRes.success && sRes.data) {
         setStatus(sRes.data);
+        if (
+          sRes.data.remote_head > sRes.data.base_version &&
+          sRes.data.remote_head !== lastNotifiedRemoteHead.current
+        ) {
+          lastNotifiedRemoteHead.current = sRes.data.remote_head;
+          toast.info("☁️ New updates detected on Google Drive. Click 'Pull Changes' to sync.");
+        }
       }
       if (fRes.success && fRes.data?.files) {
         setFiles(fRes.data.files);
@@ -146,20 +154,31 @@ export function App() {
 
   // Auto-lock countdown ticker
   useEffect(() => {
-    if (appState !== "unlocked") return;
+    if (appState !== "unlocked" || autoLockMinutes === 0) return;
 
     const timer = setInterval(() => {
       setCountdownSeconds((prev) => {
         if (prev <= 1) {
-          handleLock();
-          return 15 * 60;
+          handleLock(true);
+          return autoLockMinutes * 60;
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [appState]);
+  }, [appState, autoLockMinutes]);
+
+  const handleAutoLockMinutesChange = (minutes: number) => {
+    setAutoLockMinutes(minutes);
+    localStorage.setItem("sw_autolock_minutes", String(minutes));
+    if (minutes > 0) {
+      setCountdownSeconds(minutes * 60);
+      toast.info(`Auto-lock timeout updated to ${minutes} minutes.`);
+    } else {
+      toast.warning("Auto-lock disabled. Please lock manually when leaving your desk.");
+    }
+  };
 
   // Real-time live file & sync tracking: window focus + 3-second auto-poll
   useEffect(() => {
@@ -182,21 +201,23 @@ export function App() {
 
   const handleGoogleLogin = async () => {
     setIsAuthLoading(true);
-    setAuthMessage("");
     try {
       const res = await api.googleAuthLogin();
       if (res.success && res.data?.authenticated) {
+        const email = res.data.email || "Google Account";
         setIsDriveAuthed(true);
         if (res.data.email) {
           setAccountEmail(res.data.email);
         }
-        setAuthMessage("✓ Google Drive connected successfully!");
+        toast.success(`✓ Google Drive connected as ${email}.`);
         await refreshWorkspaceData();
       } else {
-        setAuthMessage(res.message || "Failed to authorize Google Drive.");
+        const msg = res.message || "Failed to authorize Google Drive.";
+        toast.error(msg);
       }
     } catch (e: any) {
-      setAuthMessage(e?.message || "Failed to start Google sign-in.");
+      const msg = e?.message || "Failed to start Google sign-in.";
+      toast.error(msg);
     } finally {
       setIsAuthLoading(false);
     }
@@ -204,16 +225,16 @@ export function App() {
 
   const handleGoogleLogout = async () => {
     setIsAuthLoading(true);
-    setAuthMessage("");
     try {
       const res = await api.googleAuthLogout();
       if (res.success) {
         setIsDriveAuthed(false);
         setAccountEmail("Not connected");
-        setAuthMessage("Google Drive disconnected.");
+        toast.info("Google Drive disconnected.");
       }
     } catch (e: any) {
-      setAuthMessage(e?.message || "Failed to disconnect.");
+      const msg = e?.message || "Failed to disconnect.";
+      toast.error(msg);
     } finally {
       setIsAuthLoading(false);
     }
@@ -226,15 +247,22 @@ export function App() {
   };
 
   // Lifecycle actions
-  const handleLock = async () => {
+  const handleLock = async (auto = false) => {
     await api.lock();
+    setIsAutoLocked(auto);
     setAppState("locked");
+    if (auto) {
+      toast.warning("🔒 Vault locked automatically due to 15 minutes of inactivity.");
+    } else {
+      toast.info("🔒 Vault locked. Encryption keys scrubbed from memory.");
+    }
   };
 
   const handleUnlock = async (token: string): Promise<boolean> => {
     try {
       const res = await api.unlock(workspacePath, token);
       if (res.success && res.data) {
+        setIsAutoLocked(false);
         setAppState("unlocked");
         if (res.data.name) setAccountName(res.data.name);
         setCountdownSeconds(15 * 60);
@@ -494,6 +522,31 @@ export function App() {
     setActiveTab("history");
   };
 
+  const handleJoinSuccess = async (result: JoinWorkspaceResult) => {
+    setIsJoinModalOpen(false);
+    localStorage.setItem("sw_workspace_path", result.workspace_path);
+    localStorage.setItem("sw_workspace_name", result.name);
+    setWorkspacePath(result.workspace_path);
+    setAccountName(result.name);
+
+    // Register in persistent list
+    const newWs: RegisteredWorkspace = {
+      id: `ws-${Date.now()}`,
+      name: result.name,
+      path: result.workspace_path,
+      lastOpened: Date.now(),
+    };
+    setRegisteredWorkspaces((prev) => {
+      const filtered = prev.filter((w) => w.path !== result.workspace_path);
+      return [newWs, ...filtered];
+    });
+
+    setAppState("unlocked");
+    setCountdownSeconds(15 * 60);
+    showToast(`✓ Vault '${result.name}' successfully joined from Google Drive (v${result.version}, ${result.pulled_files} files)!`, "success");
+    await refreshWorkspaceData();
+  };
+
   // Render State: Loading Enclave Splash
   if (appState === "loading") {
     return (
@@ -517,10 +570,18 @@ export function App() {
   // Render State: First-Time Onboarding Welcome
   if (appState === "welcome") {
     return (
-      <WelcomeOnboardingView
-        onCreateWorkspace={() => setAppState("wizard")}
-        onOpenExistingWorkspace={handleOpenExistingWorkspace}
-      />
+      <>
+        <WelcomeOnboardingView
+          onCreateWorkspace={() => setAppState("wizard")}
+          onOpenExistingWorkspace={handleOpenExistingWorkspace}
+          onJoinFromDrive={() => setIsJoinModalOpen(true)}
+        />
+        <JoinFromDriveModal
+          isOpen={isJoinModalOpen}
+          onClose={() => setIsJoinModalOpen(false)}
+          onSuccess={handleJoinSuccess}
+        />
+      </>
     );
   }
 
@@ -565,16 +626,25 @@ export function App() {
   // Render State: Locked
   if (appState === "locked") {
     return (
-      <UnlockView
-        workspaceName={accountName}
-        accountEmail={accountEmail}
-        version={status.base_version}
-        registeredWorkspaces={registeredWorkspaces}
-        onUnlock={handleUnlock}
-        onCreateNewWorkspace={() => setAppState("wizard")}
-        onSelectWorkspace={handleSelectWorkspace}
-        onOpenExistingWorkspace={handleOpenExistingWorkspace}
-      />
+      <>
+        <UnlockView
+          workspaceName={accountName}
+          accountEmail={accountEmail}
+          version={status.base_version}
+          registeredWorkspaces={registeredWorkspaces}
+          isAutoLocked={isAutoLocked}
+          onUnlock={handleUnlock}
+          onCreateNewWorkspace={() => setAppState("wizard")}
+          onSelectWorkspace={handleSelectWorkspace}
+          onOpenExistingWorkspace={handleOpenExistingWorkspace}
+          onJoinFromDrive={() => setIsJoinModalOpen(true)}
+        />
+        <JoinFromDriveModal
+          isOpen={isJoinModalOpen}
+          onClose={() => setIsJoinModalOpen(false)}
+          onSuccess={handleJoinSuccess}
+        />
+      </>
     );
   }
 
@@ -772,111 +842,22 @@ export function App() {
               onSelectWorkspace={handleSelectWorkspace}
               onCreateWorkspace={() => setAppState("wizard")}
               onOpenExistingWorkspace={handleOpenExistingWorkspace}
+              onJoinFromDrive={() => setIsJoinModalOpen(true)}
               onLockActiveWorkspace={handleLock}
               onRemoveWorkspace={handleRemoveWorkspace}
             />
           )}
 
           {activeTab === "settings" && (
-            <div className="p-8 max-w-4xl mx-auto space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-ink">Settings & Security</h2>
-                <p className="text-sm text-ink-muted mt-1">
-                  Configure cloud storage authentication, auto-lock timers, and security policies.
-                </p>
-              </div>
-
-              {/* Google Drive Card */}
-              <div className="bg-surface-card p-6 rounded-xl border border-line space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-vault-green/10 text-vault-green flex items-center justify-center font-bold text-sm">
-                      GD
-                    </div>
-                    <div>
-                      <div className="font-semibold text-sm text-ink">Google Drive Cloud Storage</div>
-                      <div className="text-xs text-ink-muted">
-                        Restricted to <code className="text-xs bg-mineral px-1 py-0.5 rounded">drive.file</code> scope inside dedicated folder
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    {isDriveAuthed ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#E6F4EA] text-[#137333]">
-                        <Check className="w-3.5 h-3.5" /> Connected
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-mineral text-ink-muted">
-                        Not connected
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-mineral/30 rounded-lg flex items-center justify-between text-xs">
-                  <div>
-                    <span className="text-ink-muted">Authorized Account: </span>
-                    <span className="font-medium text-ink">{isDriveAuthed ? accountEmail : "None"}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {!isDriveAuthed ? (
-                      <button
-                        onClick={handleGoogleLogin}
-                        disabled={isAuthLoading}
-                        className="py-1.5 px-4 rounded-lg text-xs font-semibold bg-vault-green text-white hover:bg-vault-hover transition shadow-sm disabled:opacity-50 flex items-center gap-1.5"
-                      >
-                        {isAuthLoading ? (
-                          <>
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                            Authorizing...
-                          </>
-                        ) : (
-                          "Authorize Google Drive"
-                        )}
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={handleGoogleLogin}
-                          disabled={isAuthLoading}
-                          className="py-1.5 px-3 rounded-lg text-xs font-medium border border-line text-ink hover:bg-mineral transition"
-                        >
-                          Switch Account
-                        </button>
-                        <button
-                          onClick={handleGoogleLogout}
-                          disabled={isAuthLoading}
-                          className="py-1.5 px-3 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition border border-red-200"
-                        >
-                          Disconnect
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {authMessage && (
-                  <div className="text-xs font-medium text-vault-green">
-                    {authMessage}
-                  </div>
-                )}
-              </div>
-
-              {/* Zero-Knowledge Security Policy */}
-              <div className="bg-surface-card p-6 rounded-xl border border-line space-y-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-                  <ShieldCheck className="w-4 h-4 text-vault-green" />
-                  Zero-Knowledge Security Invariants
-                </div>
-                <div className="text-xs text-ink-muted space-y-1.5 leading-relaxed">
-                  <p>• <strong>Cipher:</strong> libsodium XChaCha20-Poly1305 SecretStream with forward secrecy subkeys.</p>
-                  <p>• <strong>KDF:</strong> Argon2id memory-hard key derivation for master password and 24-word BIP-39 recovery phrase.</p>
-                  <p>• <strong>Zero Plaintext:</strong> All file payloads, directory names, and relative paths are encrypted before reaching disk or Google Drive.</p>
-                </div>
-              </div>
-            </div>
+            <SettingsView
+              isDriveAuthed={isDriveAuthed}
+              accountEmail={accountEmail}
+              isAuthLoading={isAuthLoading}
+              onGoogleLogin={handleGoogleLogin}
+              onGoogleLogout={handleGoogleLogout}
+              autoLockMinutes={autoLockMinutes}
+              onAutoLockMinutesChange={handleAutoLockMinutesChange}
+            />
           )}
         </main>
       </div>
@@ -885,7 +866,8 @@ export function App() {
       <PushPreviewModal
         isOpen={isPushModalOpen}
         onClose={() => setIsPushModalOpen(false)}
-        onSuccess={async (_newVersion) => {
+        onSuccess={async (newVersion) => {
+          toast.success(`✓ Successfully pushed Version ${newVersion} to Google Drive.`);
           await refreshWorkspaceData();
         }}
         onDiverged={() => setIsDivergedModalOpen(true)}
@@ -903,26 +885,12 @@ export function App() {
         conflictingFiles={status.changes.modified.map((f) => f.relative_path)}
       />
 
-      {/* Non-blocking Toast Notification Banner */}
-      {toast && (
-        <div
-          className={`fixed bottom-8 right-8 z-50 px-4 py-3 rounded-xl shadow-xl border text-xs font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 ${
-            toast.type === "error"
-              ? "bg-red-50 border-red-200 text-red-700"
-              : toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : "bg-surface-card border-line text-ink"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="p-1 hover:opacity-75 transition text-ink-muted ml-1"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      {/* Join from Google Drive Modal */}
+      <JoinFromDriveModal
+        isOpen={isJoinModalOpen}
+        onClose={() => setIsJoinModalOpen(false)}
+        onSuccess={handleJoinSuccess}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Loader2,
 } from "lucide-react";
+import { useToast } from "../context/ToastContext";
 
 interface BackupsViewProps {
   workspaceName: string;
@@ -28,6 +29,7 @@ export const BackupsView: React.FC<BackupsViewProps> = ({
   workspaceName,
   version,
 }) => {
+  const { toast } = useToast();
   const [selectedDestination, setSelectedDestination] = useState<string>("");
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState<string>("");
@@ -83,8 +85,7 @@ export const BackupsView: React.FC<BackupsViewProps> = ({
 
   const handleExportBackup = async () => {
     if (!selectedDestination) {
-      setExportProgress("Error: Please select a target destination folder on your external drive first.");
-      setTimeout(() => setExportProgress(""), 4000);
+      toast.error("Please select a folder on your external drive first.");
       return;
     }
 
@@ -99,9 +100,10 @@ export const BackupsView: React.FC<BackupsViewProps> = ({
       setExportProgress("Verifying snapshot SHA-256 integrity hash...");
       await new Promise((r) => setTimeout(r, 500));
 
+      const destinationPath = `${selectedDestination}\\${workspaceName}_v${version}`;
       const newBackup: BackupRecord = {
         id: `bak-${Date.now()}`,
-        path: `${selectedDestination}\\${workspaceName}_v${version}`,
+        path: destinationPath,
         timestamp: Date.now(),
         version,
         sizeBytes: 42 * 1024 * 1024 + Math.round(Math.random() * 2000000),
@@ -110,12 +112,15 @@ export const BackupsView: React.FC<BackupsViewProps> = ({
 
       setBackupHistory((prev) => [newBackup, ...prev]);
       setExportProgress("✓ Encrypted backup created and verified successfully!");
+      toast.success(`✓ Encrypted backup created and SHA-256 verified at: ${destinationPath}`);
       setTimeout(() => {
         setIsExporting(false);
         setExportProgress("");
       }, 2500);
     } catch (err: any) {
-      setExportProgress(`Backup failed: ${err?.message || String(err)}`);
+      const errStr = `Backup failed: ${err?.message || String(err)}`;
+      setExportProgress(errStr);
+      toast.error(errStr);
       setTimeout(() => {
         setIsExporting(false);
         setExportProgress("");

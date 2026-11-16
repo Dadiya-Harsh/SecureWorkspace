@@ -4,11 +4,13 @@ import { ShieldCheck, Plus, FolderOpen, KeyRound, Cloud, Lock } from "lucide-rea
 interface WelcomeOnboardingViewProps {
   onCreateWorkspace: () => void;
   onOpenExistingWorkspace: () => void;
+  onJoinFromDrive?: () => void;
 }
 
 export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
   onCreateWorkspace,
   onOpenExistingWorkspace,
+  onJoinFromDrive,
 }) => {
   return (
     <div className="min-h-screen w-full flex select-none bg-surface">
@@ -75,14 +77,14 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
             </p>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             {/* Card 1: Create New Workspace (Primary) */}
             <div
               onClick={onCreateWorkspace}
-              className="group p-6 rounded-2xl border-2 border-vault-mint/40 bg-surface-card hover:border-vault-mint hover:shadow-lg transition-all cursor-pointer relative overflow-hidden"
+              className="group p-5 rounded-2xl border-2 border-vault-mint/40 bg-surface-card hover:border-vault-mint hover:shadow-lg transition-all cursor-pointer relative overflow-hidden"
             >
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-vault-mint/10 border border-vault-mint/30 text-vault-mint flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-11 h-11 rounded-xl bg-vault-mint/10 border border-vault-mint/30 text-vault-mint flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                   <Plus className="w-6 h-6 stroke-[2.5]" />
                 </div>
                 <div className="flex-1">
@@ -91,13 +93,13 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
                       Create New Encrypted Workspace
                     </h3>
                     <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-vault-mint/15 text-vault-mint border border-vault-mint/25">
-                      New Users
+                      New Vault
                     </span>
                   </div>
-                  <p className="text-xs text-ink-muted mt-1.5 leading-relaxed">
-                    Set up a new zero-knowledge vault folder on this computer. You will choose a folder location, set a master password, and receive a 24-word recovery key.
+                  <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+                    Set up a new zero-knowledge vault folder on this computer with an Argon2id master password and a 24-word recovery key.
                   </p>
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <span className="inline-flex items-center gap-1.5 text-xs font-bold text-vault-mint group-hover:translate-x-1 transition-transform">
                       Set Up New Vault &rarr;
                     </span>
@@ -106,25 +108,57 @@ export const WelcomeOnboardingView: React.FC<WelcomeOnboardingViewProps> = ({
               </div>
             </div>
 
-            {/* Card 2: Open Existing Workspace (Secondary) */}
+            {/* Card 2: Join from Google Drive (New Device) */}
+            {onJoinFromDrive && (
+              <div
+                onClick={onJoinFromDrive}
+                className="group p-5 rounded-2xl border border-vault-cyan/40 bg-surface-card hover:border-vault-cyan hover:shadow-md transition-all cursor-pointer"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-vault-cyan/10 border border-vault-cyan/30 text-vault-cyan flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <Cloud className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-ink group-hover:text-vault-cyan transition-colors">
+                        Join from Google Drive
+                      </h3>
+                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-vault-cyan/15 text-vault-cyan border border-vault-cyan/25">
+                        New Device
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+                      Already have an encrypted vault synced to your Google Drive? Clone and unlock it directly on this device.
+                    </p>
+                    <div className="mt-3">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-vault-cyan group-hover:translate-x-1 transition-transform">
+                        Connect &amp; Download Vault &rarr;
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Card 3: Open Existing Local Workspace */}
             <div
               onClick={onOpenExistingWorkspace}
-              className="group p-6 rounded-2xl border border-line bg-surface-card hover:border-line-dark hover:shadow-md transition-all cursor-pointer"
+              className="group p-5 rounded-2xl border border-line bg-surface-card hover:border-line-dark hover:shadow-md transition-all cursor-pointer"
             >
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-mineral/40 border border-line text-ink flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-11 h-11 rounded-xl bg-mineral/40 border border-line text-ink flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
                   <FolderOpen className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base font-bold text-ink group-hover:text-ink transition-colors">
-                    Open Existing Workspace
+                    Open Existing Local Workspace
                   </h3>
-                  <p className="text-xs text-ink-muted mt-1.5 leading-relaxed">
-                    Already have an encrypted vault folder on an external drive, USB, or Google Drive? Select the folder to register and unlock it.
+                  <p className="text-xs text-ink-muted mt-1 leading-relaxed">
+                    Already have an encrypted vault folder on an external drive or USB? Select the folder to register and unlock it.
                   </p>
-                  <div className="mt-4">
+                  <div className="mt-3">
                     <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted group-hover:text-ink transition-colors">
-                      Browse Folder Location &rarr;
+                      Browse Local Folder &rarr;
                     </span>
                   </div>
                 </div>

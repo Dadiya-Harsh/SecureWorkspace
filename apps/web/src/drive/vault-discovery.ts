@@ -25,9 +25,7 @@ export async function discoverAllVaults(accessToken: string): Promise<Discovered
   const headerFiles = await searchFiles(accessToken, headerQuery);
 
   if (headerFiles.length === 0) {
-    throw new Error(
-      "No 'workspace.header' file found in your Google Drive. Make sure you have created and pushed a vault from the desktop app first."
-    );
+    return [];
   }
 
   const vaults: DiscoveredVault[] = [];

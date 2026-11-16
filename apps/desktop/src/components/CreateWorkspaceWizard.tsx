@@ -13,6 +13,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { api } from "../api/client";
+import { useToast } from "../context/ToastContext";
 
 interface CreateWorkspaceWizardProps {
   onCancel: () => void;
@@ -23,6 +24,7 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
   onCancel,
   onComplete,
 }) => {
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [name, setName] = useState("Personal");
   const [workspacePath, setWorkspacePath] = useState("");
@@ -44,7 +46,7 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
   const [testInput, setTestInput] = useState("");
   const [testError, setTestError] = useState("");
   const [isDriveConnected, setIsDriveConnected] = useState(false);
-  const [connectedEmail, setConnectedEmail] = useState<string>("name@gmail.com");
+  const [connectedEmail, setConnectedEmail] = useState<string>("");
   const [isAuthorizing, setIsAuthorizing] = useState(false);
   const [authError, setAuthError] = useState("");
 
@@ -105,11 +107,13 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
       const res = await api.verifyRecoveryTest(testInput.trim());
       if (res.success && res.data?.verified) {
         setTestError("");
+        toast.success("✓ Recovery phrase verified successfully!");
         setCurrentStep(5);
       } else {
         // Fallback check against local words if in dev mode
         if (words.join(" ") === recoveryWords.join(" ")) {
           setTestError("");
+          toast.success("✓ Recovery phrase verified successfully!");
           setCurrentStep(5);
         } else {
           setTestError(res.message || "Recovery phrase did not match.");
@@ -118,6 +122,7 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
     } catch {
       if (words.join(" ") === recoveryWords.join(" ")) {
         setTestError("");
+        toast.success("✓ Recovery phrase verified successfully!");
         setCurrentStep(5);
       } else {
         setTestError("Verification failed.");
@@ -144,17 +149,60 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
     try {
       const res = await api.googleAuthLogin();
       if (res.success && res.data?.authenticated) {
+        const email = res.data.email || "Google Drive Account";
         setIsDriveConnected(true);
         if (res.data.email) {
           setConnectedEmail(res.data.email);
         }
+        toast.success(`✓ Google Drive connected as ${email}. Encrypted folder ready.`);
       } else {
-        setAuthError(res.message || "Authorization failed.");
+        const msg = res.message || "Authorization failed.";
+        setAuthError(msg);
+        toast.error(`Google Drive authorization failed: ${msg}`);
       }
     } catch (err: any) {
-      setAuthError(err?.message || "Failed to initiate Google authorization.");
+      const msg = err?.message || "Failed to initiate Google authorization.";
+      setAuthError(msg);
+      toast.error(`Google Drive authorization failed: ${msg}`);
     } finally {
       setIsAuthorizing(false);
+    }
+  };
+
+  const handleSwitchDriveAccount = async () => {
+    setIsAuthorizing(true);
+    setAuthError("");
+    try {
+      await api.googleAuthLogout();
+      setIsDriveConnected(false);
+      setConnectedEmail("");
+      const res = await api.googleAuthLogin();
+      if (res.success && res.data?.authenticated) {
+        const email = res.data.email || "Google Drive Account";
+        setIsDriveConnected(true);
+        if (res.data.email) {
+          setConnectedEmail(res.data.email);
+        }
+        toast.success(`✓ Google Drive connected as ${email}. Encrypted folder ready.`);
+      } else {
+        const msg = res.message || "Authorization failed.";
+        setAuthError(msg);
+      }
+    } catch (err: any) {
+      setAuthError(err?.message || "Failed to switch Google account.");
+    } finally {
+      setIsAuthorizing(false);
+    }
+  };
+
+  const handleDisconnectDrive = async () => {
+    try {
+      await api.googleAuthLogout();
+      setIsDriveConnected(false);
+      setConnectedEmail("");
+      toast.info("Google Drive disconnected.");
+    } catch {
+      toast.error("Failed to disconnect Google Drive.");
     }
   };
 
@@ -172,6 +220,7 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
     try {
       navigator.clipboard.writeText(recoveryWords.join(" "));
       setIsCopied(true);
+      toast.success("✓ 24-word recovery phrase copied to clipboard. Store it securely!");
       setTimeout(() => setIsCopied(false), 2000);
     } catch {
       // fallback
@@ -179,6 +228,7 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
   };
 
   const handlePrint = () => {
+    toast.info("🖨️ Opening print dialog for recovery key...");
     try {
       // Create a hidden iframe to print safely without blocking WebView2 main thread
       const iframe = document.createElement("iframe");
@@ -221,23 +271,30 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
         setTimeout(() => {
           try {
             iframe.contentWindow?.print();
-          } catch {}
+          } catch {
+            toast.error("Print dialog could not be opened.");
+          }
           setTimeout(() => document.body.removeChild(iframe), 1000);
         }, 300);
+      } else {
+        toast.error("Print dialog could not be opened.");
       }
     } catch (e) {
       console.warn("Print error:", e);
+      toast.error("Print dialog could not be opened.");
     }
   };
 
   const handleDownloadFile = () => {
+    const filename = `secureworkspace-recovery-${name.toLowerCase()}.txt`;
     const blob = new Blob([recoveryWords.join(" ")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `secureworkspace-recovery-${name.toLowerCase()}.txt`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    toast.success(`✓ Recovery key saved as file: ${filename}`);
   };
 
 
@@ -662,13 +719,25 @@ export const CreateWorkspaceWizard: React.FC<CreateWorkspaceWizardProps> = ({
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#E6F4EA] text-[#137333]">
                       <Check className="w-3.5 h-3.5" /> Connected as {connectedEmail}
                     </div>
-                    <button
-                      onClick={handleAuthorizeDrive}
-                      disabled={isAuthorizing}
-                      className="text-[11px] text-ink-muted hover:text-ink underline transition"
-                    >
-                      Switch Google Account
-                    </button>
+                    <div className="flex items-center gap-3 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleSwitchDriveAccount}
+                        disabled={isAuthorizing}
+                        className="text-xs text-vault-green hover:underline font-medium transition cursor-pointer"
+                      >
+                        {isAuthorizing ? "Switching in browser..." : "Switch Account"}
+                      </button>
+                      <span className="text-line-dark/30 text-xs">·</span>
+                      <button
+                        type="button"
+                        onClick={handleDisconnectDrive}
+                        disabled={isAuthorizing}
+                        className="text-xs text-red-600 hover:underline font-medium transition cursor-pointer"
+                      >
+                        Disconnect
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

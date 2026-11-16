@@ -157,3 +157,18 @@ export interface SafetySnapshotItem {
   sha256: string;
   reason: string;
 }
+
+export interface RemoteVaultItem {
+  folder_id: string;
+  folder_name: string;
+  header_file_id: string;
+  modified_time?: string;
+}
+
+export interface JoinWorkspaceResult {
+  workspace_id: string;
+  name: string;
+  workspace_path: string;
+  pulled_files: number;
+  version: number;
+}

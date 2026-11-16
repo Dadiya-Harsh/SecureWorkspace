@@ -3,9 +3,16 @@ import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="w-full pb-12 sm:pb-16 pt-4">
+    <footer className="w-full pb-12 sm:pb-16 pt-6 border-t border-[#CAD2CD]/60 mt-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs sm:text-sm text-[#5A6662]">
+        <div className="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-2 text-xs sm:text-sm text-[#5A6662] text-center">
+          <Link
+            to="/docs"
+            className="hover:text-[#14201C] transition-colors font-medium py-0.5"
+          >
+            Docs
+          </Link>
+          <span className="text-[#CAD2CD] select-none">·</span>
           <Link
             to="/privacy"
             className="hover:text-[#14201C] transition-colors font-medium py-0.5"

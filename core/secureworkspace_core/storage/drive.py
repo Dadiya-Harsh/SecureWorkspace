@@ -384,3 +384,46 @@ class GoogleDriveStorageAdapter(StorageAdapter):
 
     def get_metadata(self, remote_id: str) -> RemoteFile:
         return self.verify_file_in_app_folder(remote_id)
+
+    def find_remote_vaults(self) -> List[Dict[str, Any]]:
+        """
+        Discovers all encrypted vaults under SecureWorkspace root or accessible via query.
+        Returns a list of dicts: {'folder_id': str, 'folder_name': str, 'header_file_id': str}
+        """
+        root_folder = self.ensure_root_folder()
+        query = "name = 'workspace.header' and trashed = false"
+        url = f"{DRIVE_API_BASE}/files"
+        res = self._request_with_token(
+            "GET",
+            url,
+            params={
+                "q": query,
+                "fields": "files(id, name, parents, modifiedTime)",
+                "pageSize": 50,
+            },
+        )
+        res.raise_for_status()
+        files = res.json().get("files", [])
+        results = []
+        for f in files:
+            parents = f.get("parents", [])
+            parent_id = parents[0] if parents else None
+            folder_name = "Vault"
+            if parent_id and parent_id != root_folder:
+                try:
+                    p_res = self._request_with_token(
+                        "GET",
+                        f"{DRIVE_API_BASE}/files/{parent_id}",
+                        params={"fields": "id, name"},
+                    )
+                    if p_res.status_code == 200:
+                        folder_name = p_res.json().get("name", "Vault")
+                except Exception:
+                    pass
+            results.append({
+                "header_file_id": f["id"],
+                "folder_id": parent_id or root_folder,
+                "folder_name": folder_name,
+                "modified_time": f.get("modifiedTime", ""),
+            })
+        return results

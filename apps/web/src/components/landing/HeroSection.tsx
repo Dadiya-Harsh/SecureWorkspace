@@ -1,140 +1,157 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, Unlock } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 export const HeroSection: React.FC = () => {
-  const [isDecrypted, setIsDecrypted] = useState(false);
-
   return (
-    <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16 sm:pt-16 sm:pb-24">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-start">
+    <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-16 sm:pt-16 sm:pb-20">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
         {/* Left Column: Value Proposition */}
-        <div className="lg:col-span-7 pr-0 lg:pr-6">
-          {/* Eyebrow Pill with subtle pulse */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#DCECE6] text-[#0F5C4D] text-xs font-medium mb-5 sm:mb-6 shadow-2xs hover:bg-[#D4E8E1] transition-colors">
-            <span className="font-bold text-xs">✓</span>
-            <span>Open source, no account with us</span>
+        <div className="lg:col-span-6 pr-0 lg:pr-4 space-y-6">
+          {/* Eyebrow Pill */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#DCECE6] text-[#0F5C4D] text-xs font-medium">
+            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>Free · Open source · Windows beta</span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-extrabold text-[#14201C] tracking-tight leading-[1.12] mb-5 sm:mb-6">
-            Your files, encrypted before they reach Google Drive.
+          <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-extrabold text-[#111816] tracking-tight leading-[1.1]">
+            Google Drive storage<br />
+            that Google can't<br />
+            read.
           </h1>
 
           {/* Subtitle */}
-          <p className="text-base sm:text-lg text-[#5A6662] leading-relaxed mb-6 sm:mb-8 max-w-xl">
-            Google stores ciphertext only. You keep the password and a 24-word
-            recovery key. No server stores your data, and we hold no keys.
+          <p className="text-base sm:text-lg text-[#5A6662] leading-relaxed max-w-lg">
+            SecureWorkspace encrypts your files on your PC before they reach Drive. You keep the password and a 24-word recovery key. No account with us, and no server that stores your data.
           </p>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 mb-4 max-w-md sm:max-w-none">
-            <a
-              href="#download"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' });
-                window.history.pushState(null, '', '#download');
-              }}
-              className="w-full sm:w-auto"
-            >
-              <button className="w-full sm:w-auto bg-[#0F5C4D] hover:bg-[#0C4B3E] active:bg-[#09392F] text-white px-6 py-3 rounded-lg font-medium text-sm transition-all duration-150 cursor-pointer shadow-xs hover:shadow-sm hover:-translate-y-0.5 text-center">
-                Download for Windows
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 pt-1">
+            <Link to="/download">
+              <button className="w-full sm:w-auto bg-[#0F5C4D] hover:bg-[#0C4B3E] active:bg-[#09392F] text-white px-6 py-3 rounded-lg font-medium text-sm transition-all duration-150 cursor-pointer shadow-xs hover:shadow-sm text-center">
+                Download beta for Windows
               </button>
-            </a>
-            <Link to="/viewer" className="w-full sm:w-auto">
-              <button className="w-full sm:w-auto bg-white hover:bg-[#F8FAF8] border border-[#CAD2CD] text-[#14201C] px-6 py-3 rounded-lg font-medium text-sm transition-all duration-150 cursor-pointer shadow-xs hover:shadow-sm hover:-translate-y-0.5 text-center">
-                Open web viewer
+            </Link>
+            <Link to="/how-it-works">
+              <button className="w-full sm:w-auto bg-[#E5E9E5] hover:bg-[#DCE1DC] text-[#14201C] px-6 py-3 rounded-lg font-medium text-sm transition-all duration-150 cursor-pointer text-center">
+                See how it works
               </button>
             </Link>
           </div>
 
           {/* Platform Caption */}
-          <p className="text-xs text-[#5A6662]">
-            Android and Ubuntu are planned. The web viewer is read-only.
+          <p className="text-xs text-[#5A6662] pt-1">
+            v0.1.0 beta · Windows 11 · Apache 2.0
           </p>
         </div>
 
-        {/* Right Column: Interactive Animated "What Google Sees" Preview Card */}
-        <div className="lg:col-span-5 w-full pt-2 relative group">
-          {/* Subtle Ambient Background Aura */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-500 pointer-events-none" />
+        {/* Right Column: App Window Screenshot / Preview Mockup */}
+        <div className="lg:col-span-6 w-full">
+          <div className="relative rounded-2xl overflow-hidden border border-[#D5DDD6] shadow-xl bg-white text-xs select-none">
+            <div className="flex h-[320px] sm:h-[340px]">
+              {/* Left Dark Sidebar */}
+              <div className="w-36 sm:w-44 bg-[#0F1D19] text-[#E6EFEA] p-3 flex flex-col justify-between shrink-0 border-r border-[#1B2F29]">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 px-1">
+                    <img
+                      src="/branding/mark-on-dark.svg"
+                      alt="SecureWorkspace"
+                      className="w-5 h-5 rounded object-contain"
+                    />
+                    <span className="font-bold text-[13px] text-white tracking-tight">SecureWorkspace</span>
+                  </div>
 
-          <div
-            onClick={() => setIsDecrypted(!isDecrypted)}
-            className="relative bg-white rounded-2xl p-6 sm:p-7 border border-[#E2E6E3] shadow-xs hover:border-[#CAD2CD] transition-all duration-300 flex flex-col justify-between min-h-[220px] cursor-pointer select-none"
-            title="Click to toggle between Google's view and your decrypted view"
-          >
-            {/* Top Bar with Live Beacon & Toggle Trigger */}
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#F2F5F2]">
-              <div className="flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#5A6662]">
-                  {isDecrypted ? 'Decrypted in RAM' : 'Google Drive View'}
-                </span>
+                  <div className="space-y-0.5 text-[11px] font-medium text-[#8EA39C]">
+                    <div className="px-2 py-1 rounded hover:text-white cursor-pointer">Dashboard</div>
+                    <div className="px-2 py-1 rounded bg-[#1B2F29] text-white font-semibold cursor-pointer">Files</div>
+                    <div className="px-2 py-1 rounded hover:text-white cursor-pointer">Sync</div>
+                    <div className="px-2 py-1 rounded hover:text-white cursor-pointer">History</div>
+                    <div className="px-2 py-1 rounded hover:text-white cursor-pointer">Backups</div>
+                    <div className="px-2 py-1 rounded hover:text-white cursor-pointer">Workspaces</div>
+                    <div className="px-2 py-1 rounded hover:text-white cursor-pointer">Settings</div>
+                  </div>
+                </div>
+
+                <div className="px-2 py-1 text-[10px] text-[#5C756D] border-t border-[#1B2F29] pt-2">
+                  v0.1.0 · Locked
+                </div>
               </div>
 
-              <div className="flex items-center gap-1 text-[11px] font-mono text-[#0F5C4D] bg-[#E6F4F1] hover:bg-[#D4E8E1] px-2 py-0.5 rounded transition-colors">
-                {isDecrypted ? (
-                  <>
-                    <Unlock className="w-3 h-3 text-[#0F5C4D]" />
-                    <span>Plaintext</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-3 h-3 text-[#0F5C4D]" />
-                    <span>Ciphertext</span>
-                  </>
-                )}
-                <span className="opacity-50 ml-1">⇄</span>
+              {/* Right Main Table Content */}
+              <div className="flex-1 bg-white p-4 sm:p-5 flex flex-col justify-between overflow-hidden">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#EDF0ED]">
+                    <span className="font-bold text-sm text-[#14201C]">Workspace Files</span>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <span className="px-2 py-0.5 rounded border border-[#CAD2CD] text-[#5A6662] bg-[#F8FAF8]">
+                        + Open folder
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Mock Table */}
+                  <div className="w-full">
+                    <div className="grid grid-cols-12 text-[10px] font-semibold text-[#5A6662] pb-1.5 border-b border-[#F2F5F2]">
+                      <span className="col-span-5">Name</span>
+                      <span className="col-span-2">Size</span>
+                      <span className="col-span-2">Modified</span>
+                      <span className="col-span-3 text-right">Status</span>
+                    </div>
+
+                    <div className="divide-y divide-[#F2F5F2] text-[11px] font-mono">
+                      <div className="grid grid-cols-12 py-2 items-center">
+                        <span className="col-span-5 font-sans font-medium text-[#14201C] truncate">tax-return.xlsx</span>
+                        <span className="col-span-2 text-[#5A6662]">1.2 MB</span>
+                        <span className="col-span-2 text-[#5A6662]">14 Nov</span>
+                        <span className="col-span-3 text-right">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold font-sans bg-[#E6F4EA] text-[#137333]">
+                            ✓ In Drive
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-12 py-2 items-center">
+                        <span className="col-span-5 font-sans font-medium text-[#14201C] truncate">test-100.docx</span>
+                        <span className="col-span-2 text-[#5A6662]">2.1 MB</span>
+                        <span className="col-span-2 text-[#5A6662]">14 Nov</span>
+                        <span className="col-span-3 text-right">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold font-sans bg-[#E6F4EA] text-[#137333]">
+                            ✓ In Drive
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-12 py-2 items-center">
+                        <span className="col-span-5 font-sans font-medium text-[#14201C] truncate">test-101.pdf</span>
+                        <span className="col-span-2 text-[#5A6662]">740 KB</span>
+                        <span className="col-span-2 text-[#5A6662]">14 Nov</span>
+                        <span className="col-span-3 text-right">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold font-sans bg-[#E6F4EA] text-[#137333]">
+                            ✓ In Drive
+                          </span>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-12 py-2 items-center">
+                        <span className="col-span-5 font-sans font-medium text-[#14201C] truncate">test-102.pdf</span>
+                        <span className="col-span-2 text-[#5A6662]">1.5 MB</span>
+                        <span className="col-span-2 text-[#5A6662]">14 Nov</span>
+                        <span className="col-span-3 text-right">
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold font-sans bg-[#E6F4EA] text-[#137333]">
+                            ✓ In Drive
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-[#5A6662] flex items-center justify-between pt-2 border-t border-[#F2F5F2]">
+                  <span>4 files · 5.54 MB total</span>
+                  <span className="text-[#0F5C4D] font-medium font-sans">Synced with Google Drive</span>
+                </div>
               </div>
-            </div>
-
-            {/* Content Lines (Smooth Ciphertext vs Plaintext Switch) */}
-            <div className="space-y-2.5 font-mono text-xs sm:text-sm overflow-hidden py-1 transition-all duration-200">
-              {isDecrypted ? (
-                <>
-                  <div className="text-emerald-700 font-semibold tracking-wide truncate flex items-center gap-2 animate-in fade-in duration-200">
-                    <span className="text-[#3FB89A]">📊</span>
-                    <span>Tax & Legal/Q3_tax_return.xlsx</span>
-                  </div>
-                  <div className="text-[#14201C] font-medium tracking-wide truncate flex items-center gap-2 animate-in fade-in duration-200">
-                    <span className="text-[#5A6662]">🔑</span>
-                    <span>SWH1 256-bit Master Key Envelope</span>
-                  </div>
-                  <div className="text-[#5A6662] tracking-wide truncate flex items-center gap-2 animate-in fade-in duration-200">
-                    <span className="text-[#5A6662]">📋</span>
-                    <span>Version 14 Manifest (12 files)</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="text-[#3FB89A] font-medium tracking-wide truncate animate-in fade-in duration-200">
-                    objects/9f3a...c1.bin
-                  </div>
-                  <div className="text-[#A0ACA8] tracking-wide truncate animate-in fade-in duration-200">
-                    workspace.header
-                  </div>
-                  <div className="text-[#A0ACA8] tracking-wide truncate animate-in fade-in duration-200">
-                    versions/0014.manifest
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Bottom Explainer Note */}
-            <div className="mt-8 pt-3 border-t border-[#F2F5F2] flex items-center justify-between text-xs text-[#8E9A96]">
-              <span>
-                {isDecrypted
-                  ? 'Decrypted 100% in browser RAM with WebAssembly.'
-                  : 'What Google sees: random-looking files, sizes, and timing.'}
-              </span>
-              <span className="text-[10px] font-mono text-[#0F5C4D] underline opacity-70 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-                Tap to toggle
-              </span>
             </div>
           </div>
         </div>

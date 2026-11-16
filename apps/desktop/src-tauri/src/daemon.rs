@@ -132,18 +132,24 @@ impl DaemonManager {
 
         let reader = self.reader.as_mut().ok_or("Daemon stdout not available")?;
         let mut resp_line = String::new();
-        reader
-            .read_line(&mut resp_line)
-            .map_err(|e| format!("Failed to read from daemon: {}", e))?;
+        loop {
+            resp_line.clear();
+            let bytes_read = reader
+                .read_line(&mut resp_line)
+                .map_err(|e| format!("Failed to read from daemon: {}", e))?;
 
-        if resp_line.trim().is_empty() {
-            return Err("Daemon returned empty response or process exited".to_string());
+            if bytes_read == 0 || resp_line.trim().is_empty() {
+                return Err("Daemon returned empty response or process exited".to_string());
+            }
+
+            let trimmed = resp_line.trim();
+            // Ignore non-JSON lines printed by third-party libraries (e.g. google-auth)
+            if trimmed.starts_with('{') && trimmed.ends_with('}') {
+                let resp_val: Value = serde_json::from_str(trimmed)
+                    .map_err(|e| format!("Failed to parse daemon response: {}", e))?;
+                return Ok(resp_val);
+            }
         }
-
-        let resp_val: Value = serde_json::from_str(&resp_line)
-            .map_err(|e| format!("Failed to parse daemon response: {}", e))?;
-
-        Ok(resp_val)
     }
 }
 
