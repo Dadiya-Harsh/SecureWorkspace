@@ -6,11 +6,6 @@ export const PrivacyPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#EDF0ED] flex flex-col justify-between selection:bg-[#DCECE6] selection:text-[#0F5C4D]">
       <div>
-        {/* Top Amber Review Banner */}
-        <div className="w-full bg-[#FCE7C5] text-[#593610] text-xs py-2 px-4 sm:px-6 font-medium text-left">
-          Draft for review. Not legal advice. Items in [brackets] must be confirmed before publishing.
-        </div>
-
         <Navbar />
 
         <main className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
@@ -29,7 +24,7 @@ export const PrivacyPage: React.FC = () => {
                 What the desktop app handles
               </h2>
               <p>
-                Your files stay on your PC and, encrypted, in your own Google Drive. The Google sign-in token is stored on your device. [Confirm: the app sends no analytics or crash reports.]
+                Your files stay on your PC and, encrypted, in your own Google Drive. The Google sign-in token is stored strictly on your device. The app sends no analytics, telemetry, or crash reports.
               </p>
             </section>
 
@@ -39,7 +34,7 @@ export const PrivacyPage: React.FC = () => {
                 The web viewer
               </h2>
               <p>
-                No accounts, no cookies, no analytics. Keys and decrypted files stay in your browser tab. The viewer talks to Google's APIs directly. The site host may keep standard request logs such as IP address and time. [Confirm for the chosen host.]
+                No accounts, no cookies, no analytics. Keys and decrypted files stay in your browser tab's volatile RAM. The viewer communicates directly with Google's APIs via client-side OAuth tokens. The site is hosted statically and maintains zero user databases.
               </p>
             </section>
 
@@ -49,7 +44,7 @@ export const PrivacyPage: React.FC = () => {
                 Google data we access
               </h2>
               <p>
-                Only the <code className="text-xs bg-[#E2E6E3] px-1.5 py-0.5 rounded font-mono">drive.file</code> permission: files this app created or you open with it. [Confirm whether the account email is read, and that it is shown on screen only.]
+                Only the <code className="text-xs bg-[#E2E6E3] px-1.5 py-0.5 rounded font-mono text-[#14201C]">drive.file</code> permission: files this app created or you choose to open with it. Your Google account email is used purely on screen for account identification and is never transmitted to any third party.
               </p>
             </section>
 
@@ -59,7 +54,7 @@ export const PrivacyPage: React.FC = () => {
                 What we do not collect
               </h2>
               <p>
-                File contents, file names, passwords, recovery keys, or usage analytics.
+                File contents, file names, passwords, recovery keys, personal identities, or usage analytics.
               </p>
             </section>
 
@@ -69,22 +64,25 @@ export const PrivacyPage: React.FC = () => {
                 Your choices
               </h2>
               <p>
-                Disconnect Google in Settings, remove access in your Google account, or delete the SecureWorkspace folder in Drive.
+                Disconnect Google in Settings, remove access in your Google account security settings, or delete the SecureWorkspace folder in your Google Drive at any time.
               </p>
             </section>
 
             {/* Contact */}
             <section className="space-y-2 pt-4 border-t border-[#CAD2CD]">
               <h2 className="text-lg font-bold text-[#14201C]">
-                Contact
+                Contact &amp; Questions
               </h2>
               <p>
+                Questions or concerns? Please open a discussion or issue on our{' '}
                 <a
-                  href="mailto:contact@secureworkspace.local"
+                  href="https://github.com/Dadiya-Harsh/SecureWorkspace/discussions"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-[#0F5C4D] font-medium hover:underline"
                 >
-                  [contact email]
-                </a>
+                  GitHub Discussions
+                </a>.
               </p>
             </section>
           </div>

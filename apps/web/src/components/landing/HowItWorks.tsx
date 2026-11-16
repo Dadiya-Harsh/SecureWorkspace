@@ -9,63 +9,75 @@ export const HowItWorks: React.FC = () => {
         </h2>
 
         {/* 3-Step Flow Diagram */}
-        <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center mb-12">
-          {/* Node 1: Your PC */}
-          <div className="md:col-span-3 bg-white rounded-xl p-5 border border-[#CAD2CD] shadow-2xs">
-            <div className="text-[10px] font-mono font-semibold tracking-wider text-[#5A6662] uppercase mb-1">
-              YOUR PC
+        <div className="mb-14">
+          <div className="flex flex-col md:flex-row items-stretch w-full">
+            {/* Card 1: Your PC */}
+            <div className="w-full md:flex-1 bg-white rounded-2xl p-6 border border-[#CAD2CD] shadow-sm flex flex-col justify-center">
+              <div className="text-[11px] font-mono font-bold tracking-wider text-[#5A6662] uppercase mb-2">
+                YOUR PC
+              </div>
+              <div className="text-base font-bold text-[#14201C] mb-1 font-mono">
+                tax-return.xlsx
+              </div>
+              <div className="text-xs text-[#5A6662]">
+                Readable only here
+              </div>
             </div>
-            <div className="text-sm font-bold text-[#14201C] mb-1 font-mono">
-              tax-return.xlsx
-            </div>
-            <div className="text-xs text-[#5A6662]">
-              Readable only here
-            </div>
-          </div>
 
-          {/* Connector 1: Locked on your PC */}
-          <div className="md:col-span-1 flex flex-col items-center justify-center py-2 md:py-0">
-            <div className="w-full relative flex items-center justify-center">
-              <div className="hidden md:block w-full border-t-2 border-dashed border-[#CAD2CD]"></div>
-              <span className="md:absolute text-[10px] font-mono font-medium text-[#5A6662] bg-white px-2 py-0.5 whitespace-nowrap text-center">
-                Locked on your PC
-              </span>
+            {/* Connector 1: Double Dashed Green Line with Plain Text in the Middle */}
+            <div className="w-full md:w-36 lg:w-44 flex items-center justify-center relative py-4 md:py-0 shrink-0">
+              {/* Double dashed horizontal green tracks */}
+              <div className="hidden md:flex flex-col justify-between w-full h-[46px] absolute inset-x-0 pointer-events-none">
+                <div className="w-full border-t border-dashed border-[#0F5C4D]"></div>
+                <div className="w-full border-b border-dashed border-[#0F5C4D]"></div>
+              </div>
+              {/* Plain text floating between the dashed lines on clean white bg (no box, no border) */}
+              <div className="relative z-10 bg-white px-2 py-0.5 text-center">
+                <span className="text-[11px] font-medium text-[#0F5C4D] leading-tight block whitespace-nowrap">
+                  Locked on your<br />PC
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Node 2: Your Google Drive */}
-          <div className="md:col-span-3 bg-white rounded-xl p-5 border border-[#CAD2CD] shadow-2xs">
-            <div className="text-[10px] font-mono font-semibold tracking-wider text-[#5A6662] uppercase mb-1">
-              YOUR GOOGLE DRIVE
+            {/* Card 2: Your Google Drive */}
+            <div className="w-full md:flex-1 bg-white rounded-2xl p-6 border border-[#CAD2CD] shadow-sm flex flex-col justify-center">
+              <div className="text-[11px] font-mono font-bold tracking-wider text-[#5A6662] uppercase mb-2">
+                YOUR GOOGLE DRIVE
+              </div>
+              <div className="text-base font-bold text-[#14201C] mb-1 font-mono truncate">
+                objects/9f3a...c1.bin
+              </div>
+              <div className="text-xs text-[#5A6662]">
+                Random-looking to Google
+              </div>
             </div>
-            <div className="text-sm font-bold text-[#14201C] mb-1 font-mono truncate">
-              objects/9f3a...c1.bin
-            </div>
-            <div className="text-xs text-[#5A6662]">
-              Random-looking to Google
-            </div>
-          </div>
 
-          {/* Connector 2: Unlocked in your browser */}
-          <div className="md:col-span-1 flex flex-col items-center justify-center py-2 md:py-0">
-            <div className="w-full relative flex items-center justify-center">
-              <div className="hidden md:block w-full border-t-2 border-dashed border-[#CAD2CD]"></div>
-              <span className="md:absolute text-[10px] font-mono font-medium text-[#5A6662] bg-white px-2 py-0.5 whitespace-nowrap text-center">
-                Unlocked in your browser
-              </span>
+            {/* Connector 2: Double Dashed Green Line with Plain Text in the Middle */}
+            <div className="w-full md:w-36 lg:w-44 flex items-center justify-center relative py-4 md:py-0 shrink-0">
+              {/* Double dashed horizontal green tracks */}
+              <div className="hidden md:flex flex-col justify-between w-full h-[46px] absolute inset-x-0 pointer-events-none">
+                <div className="w-full border-t border-dashed border-[#0F5C4D]"></div>
+                <div className="w-full border-b border-dashed border-[#0F5C4D]"></div>
+              </div>
+              {/* Plain text floating between the dashed lines on clean white bg (no box, no border) */}
+              <div className="relative z-10 bg-white px-2 py-0.5 text-center">
+                <span className="text-[11px] font-medium text-[#0F5C4D] leading-tight block whitespace-nowrap">
+                  Unlocked in your<br />browser
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Node 3: Browser Tab */}
-          <div className="md:col-span-3 bg-white rounded-xl p-5 border border-[#CAD2CD] shadow-2xs">
-            <div className="text-[10px] font-mono font-semibold tracking-wider text-[#5A6662] uppercase mb-1">
-              BROWSER TAB
-            </div>
-            <div className="text-sm font-bold text-[#14201C] mb-1">
-              Read-only view
-            </div>
-            <div className="text-xs text-[#5A6662]">
-              Gone when you lock
+            {/* Card 3: Browser Tab */}
+            <div className="w-full md:flex-1 bg-white rounded-2xl p-6 border border-[#CAD2CD] shadow-sm flex flex-col justify-center">
+              <div className="text-[11px] font-mono font-bold tracking-wider text-[#5A6662] uppercase mb-2">
+                BROWSER TAB
+              </div>
+              <div className="text-base font-bold text-[#14201C] mb-1">
+                Read-only view
+              </div>
+              <div className="text-xs text-[#5A6662]">
+                Gone when you lock
+              </div>
             </div>
           </div>
         </div>
