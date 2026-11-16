@@ -271,11 +271,11 @@ Currently, toast notifications in `App.tsx` are rendered only while in the `unlo
   - Red alert badge at 30 days since last backup.
 
 ### 4.3 Settings Panel Expansion (`SettingsView.tsx`)
-- [ ] **Security Settings**:
+- [x] **Security Settings**:
   - Change master password (re-wraps WMK with new password salt and derived KEK).
   - View / regenerate 24-word recovery phrase.
   - Configurable auto-lock timeout (5m, 15m, 30m, 1h, Never).
-- [ ] **Maintenance Settings**:
+- [x] **Maintenance Settings**:
   - History retention policy (30 days, 90 days, 1 year, Forever).
   - Export diagnostic logs (sanitized log package).
 
