@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Reveal } from '../common/Reveal';
 
 export const BottomCtaBanner: React.FC = () => {
   return (
     <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
-      <div className="bg-[#0F5C4D] text-white rounded-3xl p-10 sm:p-14 text-center flex flex-col items-center justify-center space-y-4 shadow-sm">
+      <Reveal className="bg-[#0F5C4D] text-white rounded-3xl p-10 sm:p-14 text-center flex flex-col items-center justify-center space-y-4 shadow-sm">
         <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
           Try the beta.
         </h2>
@@ -15,7 +16,7 @@ export const BottomCtaBanner: React.FC = () => {
 
         <div className="pt-2">
           <Link to="/download">
-            <button className="bg-white hover:bg-[#F2F5F2] text-[#0F5C4D] px-8 py-3.5 rounded-lg font-bold text-sm transition-all duration-150 cursor-pointer shadow-sm hover:shadow">
+            <button className="bg-white hover:bg-[#F2F5F2] text-[#0F5C4D] px-8 py-3.5 rounded-lg font-bold text-sm transition-all duration-200 cursor-pointer shadow-sm hover:shadow hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
               Download for Windows
             </button>
           </Link>
@@ -29,7 +30,7 @@ export const BottomCtaBanner: React.FC = () => {
             v0.1.0 · Windows 11 · Checksums and install notes →
           </Link>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 };

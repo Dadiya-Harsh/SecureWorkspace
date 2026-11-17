@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/motion.css";
 
 @theme {
   --color-mineral: #EDF0ED;
@@ -31,8 +32,10 @@
   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
 }
 
-html {
-  scroll-behavior: smooth;
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {

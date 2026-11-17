@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
+import { Reveal } from '../common/Reveal';
 
 interface FaqItem {
   id: string;
@@ -48,40 +49,58 @@ export const FaqSection: React.FC = () => {
   };
 
   return (
-    <section className="bg-white py-16 sm:py-24 border-t border-[#E2E6E3] scroll-mt-12" id="faq">
+    <section
+      className="bg-white py-16 sm:py-24 border-t border-[#E2E6E3] scroll-mt-12"
+      id="faq"
+    >
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
-        <h2 className="text-3xl font-bold text-[#14201C] tracking-tight mb-8">
-          Questions
-        </h2>
+        <Reveal>
+          <h2 className="text-3xl font-bold text-[#14201C] tracking-tight mb-8">
+            Questions
+          </h2>
+        </Reveal>
 
-        <div className="divide-y divide-[#E2E6E3] border-t border-[#E2E6E3]">
-          {FAQ_ITEMS.map((item) => {
-            const isOpen = openId === item.id;
-            return (
-              <div key={item.id} className="py-4">
-                <button
-                  type="button"
-                  onClick={() => toggle(item.id)}
-                  aria-expanded={isOpen}
-                  className="w-full flex items-center gap-2.5 text-left font-bold text-sm sm:text-base text-[#14201C] hover:text-[#0F5C4D] transition-colors cursor-pointer select-none py-1"
-                >
-                  {isOpen ? (
-                    <ChevronDown className="w-4 h-4 text-[#0F5C4D] shrink-0" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-[#5A6662] shrink-0" />
-                  )}
-                  <span>{item.question}</span>
-                </button>
+        <Reveal delay={100}>
+          <div className="divide-y divide-[#E2E6E3] border-t border-[#E2E6E3]">
+            {FAQ_ITEMS.map((item) => {
+              const isOpen = openId === item.id;
+              return (
+                <div key={item.id} className="py-4">
+                  <button
+                    type="button"
+                    id={`faq-btn-${item.id}`}
+                    aria-controls={`faq-panel-${item.id}`}
+                    onClick={() => toggle(item.id)}
+                    aria-expanded={isOpen}
+                    className="w-full flex items-center gap-2.5 text-left font-bold text-sm sm:text-base text-[#14201C] hover:text-[#0F5C4D] transition-colors cursor-pointer select-none py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0F5C4D] rounded-sm"
+                  >
+                    <ChevronRight
+                      className={`w-4 h-4 shrink-0 transition-transform duration-300 motion-reduce:transition-none ${
+                        isOpen ? 'rotate-90 text-[#0F5C4D]' : 'text-[#5A6662]'
+                      }`}
+                    />
+                    <span>{item.question}</span>
+                  </button>
 
-                {isOpen && (
-                  <div className="pl-6 pt-2 pb-1 text-xs sm:text-sm text-[#5A6662] leading-relaxed">
-                    {item.answer}
+                  <div
+                    id={`faq-panel-${item.id}`}
+                    role="region"
+                    aria-labelledby={`faq-btn-${item.id}`}
+                    className={`grid transition-[grid-template-rows] duration-350 ease-out motion-reduce:transition-none ${
+                      isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                    }`}
+                  >
+                    <div className="overflow-hidden min-h-0">
+                      <div className="pl-6 pt-2 pb-1 text-xs sm:text-sm text-[#5A6662] leading-relaxed">
+                        {item.answer}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        </Reveal>
       </div>
     </section>
   );
