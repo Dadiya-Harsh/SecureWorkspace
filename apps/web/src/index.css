@@ -66,3 +66,31 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-ink-muted);
 }
+
+/* Link whose underline draws in from the left on hover */
+.link-draw {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat;
+  transition: background-size 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.link-draw:hover {
+  background-size: 100% 1.5px;
+}
+
+/* Card / button hover lift */
+.lift {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s, border-color 0.25s;
+}
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 34px rgba(15, 92, 77, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-draw,
+  .lift {
+    transition: none;
+  }
+  .lift:hover {
+    transform: none;
+  }
+}

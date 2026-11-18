@@ -9,8 +9,8 @@ export const Navbar: React.FC = () => {
   const closeMenu = () => setMobileMenuOpen(false);
 
   return (
-    <header className="w-full relative z-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-4 flex items-center justify-between">
+    <header className="w-full sticky top-0 z-40 bg-[#EDF0ED]/80 backdrop-blur-md border-b border-[#D3DAD5]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
         {/* Brand Official Vector Logo */}
         <Link
           to="/"
@@ -29,30 +29,33 @@ export const Navbar: React.FC = () => {
           <nav className="flex items-center gap-7 text-sm font-medium text-[#14201C]">
             <Link
               to="/how-it-works"
+              aria-current={location.pathname === '/how-it-works' ? 'page' : undefined}
               className={`relative group hover:text-[#0F5C4D] transition-colors py-1 ${
                 location.pathname === '/how-it-works' ? 'text-[#0F5C4D] font-semibold' : ''
               }`}
             >
               How it works
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0F5C4D] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-250 ease-out pointer-events-none" />
+              <span className={`absolute bottom-0 left-0 right-0 h-[2px] bg-[#0F5C4D] origin-left transition-transform duration-250 ease-out pointer-events-none ${location.pathname === '/how-it-works' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} />
             </Link>
             <Link
               to="/security"
+              aria-current={location.pathname === '/security' ? 'page' : undefined}
               className={`relative group hover:text-[#0F5C4D] transition-colors py-1 ${
                 location.pathname === '/security' ? 'text-[#0F5C4D] font-semibold' : ''
               }`}
             >
               Security
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0F5C4D] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-250 ease-out pointer-events-none" />
+              <span className={`absolute bottom-0 left-0 right-0 h-[2px] bg-[#0F5C4D] origin-left transition-transform duration-250 ease-out pointer-events-none ${location.pathname === '/security' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} />
             </Link>
             <Link
               to="/docs"
+              aria-current={location.pathname === '/docs' ? 'page' : undefined}
               className={`relative group hover:text-[#0F5C4D] transition-colors py-1 ${
                 location.pathname === '/docs' ? 'text-[#0F5C4D] font-semibold' : ''
               }`}
             >
               Docs
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0F5C4D] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-250 ease-out pointer-events-none" />
+              <span className={`absolute bottom-0 left-0 right-0 h-[2px] bg-[#0F5C4D] origin-left transition-transform duration-250 ease-out pointer-events-none ${location.pathname === '/docs' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} />
             </Link>
             <a
               href="https://github.com/Dadiya-Harsh/SecureWorkspace"
@@ -65,12 +68,13 @@ export const Navbar: React.FC = () => {
             </a>
             <Link
               to="/viewer"
+              aria-current={location.pathname === '/viewer' ? 'page' : undefined}
               className={`relative group hover:text-[#0F5C4D] transition-colors py-1 ${
                 location.pathname === '/viewer' ? 'text-[#0F5C4D] font-semibold' : ''
               }`}
             >
               Web viewer
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#0F5C4D] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-250 ease-out pointer-events-none" />
+              <span className={`absolute bottom-0 left-0 right-0 h-[2px] bg-[#0F5C4D] origin-left transition-transform duration-250 ease-out pointer-events-none ${location.pathname === '/viewer' ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'}`} />
             </Link>
           </nav>
 
