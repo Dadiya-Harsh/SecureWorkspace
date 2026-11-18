@@ -1,14 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Navbar } from '../components/common/Navbar';
-import { Footer } from '../components/common/Footer';
+import { PageLayout } from '../components/common/PageLayout';
 import { ArrowLeft, ShieldAlert } from 'lucide-react';
 
 export const NotFoundPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#EDF0ED] flex flex-col justify-between selection:bg-[#DCECE6] selection:text-[#0F5C4D]">
-      <div>
-        <Navbar />
+    <PageLayout>
         <main className="max-w-2xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
           <div className="bg-white rounded-2xl p-8 sm:p-12 border border-[#E2E6E3] shadow-xs space-y-6">
             <div className="w-16 h-16 rounded-2xl bg-[#E6F4F1] border border-[#CAD2CD] flex items-center justify-center mx-auto text-[#0F5C4D]">
@@ -42,8 +39,6 @@ export const NotFoundPage: React.FC = () => {
             </div>
           </div>
         </main>
-      </div>
-      <Footer />
-    </div>
+    </PageLayout>
   );
 };

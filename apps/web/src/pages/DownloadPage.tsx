@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Navbar } from '../components/common/Navbar';
-import { Footer } from '../components/common/Footer';
+import { PageLayout } from '../components/common/PageLayout';
 import { Check, Copy, CheckCircle2 } from 'lucide-react';
 
 export const DownloadPage: React.FC = () => {
@@ -15,10 +14,7 @@ export const DownloadPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#EDF0ED] flex flex-col justify-between selection:bg-[#DCECE6] selection:text-[#0F5C4D]">
-      <div>
-        <Navbar />
-
+    <PageLayout>
         <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
           {/* Beta Badge */}
           <div className="mb-4">
@@ -166,9 +162,6 @@ export const DownloadPage: React.FC = () => {
             </div>
           </div>
         </main>
-      </div>
-
-      <Footer />
-    </div>
+    </PageLayout>
   );
 };
