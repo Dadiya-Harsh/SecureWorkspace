@@ -10,6 +10,7 @@ import { DocsPage } from './pages/DocsPage';
 import { HowItWorksPage } from './pages/HowItWorksPage';
 import { DownloadPage } from './pages/DownloadPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { PrototypeDemoPage } from './pages/PrototypeDemoPage';
 
 export function App() {
   return (
@@ -25,6 +26,8 @@ export function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/components" element={<PrototypeDemoPage />} />
+        <Route path="/prototype-demo" element={<PrototypeDemoPage />} />
         <Route path="/404" element={<NotFoundPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

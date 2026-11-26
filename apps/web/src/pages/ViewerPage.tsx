@@ -8,6 +8,7 @@ import { FileTable } from '../components/viewer/FileTable';
 import { DocumentViewerHost } from '../components/viewers/DocumentViewerHost';
 import { VersionHistory } from '../components/viewer/VersionHistory';
 import { AutoLockManager } from '../components/viewer/AutoLockManager';
+import { Footer } from '../components/common/Footer';
 import { useVaultStore } from '../store/useVaultStore';
 import { Menu } from 'lucide-react';
 
@@ -31,6 +32,7 @@ export const ViewerPage: React.FC = () => {
               {vault && <UnlockStep />}
             </main>
           </div>
+          <Footer compact />
         </div>
       ) : (
         // Unlocked Vault Interface (Screen 4: File Explorer & Screen 5: Document Viewer)
