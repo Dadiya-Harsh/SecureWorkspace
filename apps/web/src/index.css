@@ -1,35 +1,66 @@
 @import "tailwindcss";
 @import "./styles/motion.css";
 
+:root {
+  --bg: #EDF0ED;
+  --paper: #F8FAF8;
+  --ink: #14201C;
+  --mu: #4A5A54;
+  --line: #D3DAD5;
+  --g: #0F5C4D;
+  --g2: #0F5C4D;
+  --mint: #6FD0B8;
+  --dot: #C9D2CC;
+  --seal: #2B3833;
+  --amb: #F4E3BC;
+  --ambt: #5F4205;
+  --soft: #D9EADF;
+  --softt: #0B4F40;
+  --err: #F2D3CC;
+  --errt: #80261A;
+}
+
 @theme {
   --color-mineral: #EDF0ED;
   --color-surface: #F8FAF8;
   --color-surface-card: #FFFFFF;
   --color-surface-dark: #13201C;
 
+  --color-bg: #EDF0ED;
+  --color-paper: #F8FAF8;
   --color-ink: #14201C;
-  --color-ink-muted: #5A6662;
+  --color-ink-muted: #4A5A54;
   --color-ink-light: #E6EFEA;
+  --color-mu: #4A5A54;
+  --color-line: #D3DAD5;
 
   --color-rail: #0F1D19;
   --color-rail-active: #1A2C27;
   --color-rail-hover: #142420;
 
+  --color-brand-green: #0F5C4D;
   --color-vault-green: #0F5C4D;
   --color-vault-hover: #0C4B3E;
-  --color-vault-mint: #3FB89A;
+  --color-vault-mint: #6FD0B8;
+  --color-mint: #6FD0B8;
   --color-vault-subtle: #E6F4F1;
+  --color-seal: #2B3833;
 
-  --color-danger: #9B2F1F;
-  --color-danger-hover: #822618;
-  --color-danger-subtle: #FCE8E6;
+  --color-amber-bg: #F4E3BC;
+  --color-amber-text: #5F4205;
+  --color-softgreen-bg: #D9EADF;
+  --color-softgreen-text: #0B4F40;
+  --color-error-bg: #F2D3CC;
+  --color-error-text: #80261A;
 
-  --color-line: #E2E6E3;
-  --color-line-dark: #25362F;
+  --color-danger: #80261A;
+  --color-danger-hover: #661D13;
+  --color-danger-subtle: #F2D3CC;
+
   --color-night: #0B1311;
 
   --font-sans: "Hanken Grotesk", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -38,14 +69,86 @@
   }
 }
 
+html {
+  scroll-padding-top: 72px;
+}
+
 body {
-  background-color: var(--color-mineral);
-  color: var(--color-ink);
+  background-color: #EDF0ED;
+  color: #14201C;
   margin: 0;
   font-family: var(--font-sans);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-image: radial-gradient(#C9D2CC 1px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+.mono {
+  font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  font-weight: 500;
+}
+
+:focus-visible {
+  outline: 2px solid #0F5C4D;
+  outline-offset: 2px;
+}
+
+/* Marching dashes animations */
+@keyframes march {
+  to {
+    background-position: 12px 0;
+  }
+}
+
+@keyframes marchy {
+  to {
+    background-position: 0 12px;
+  }
+}
+
+@keyframes trv {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 8px);
+    opacity: 0;
+  }
+}
+
+@keyframes trvy {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 8px);
+    opacity: 0;
+  }
+}
+
+@keyframes shake {
+  20%, 60% {
+    transform: translateX(-8px);
+  }
+  40%, 80% {
+    transform: translateX(8px);
+  }
 }
 
 /* Custom scrollbars matching the mineral theme */
@@ -64,7 +167,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ink-muted);
+  background: var(--color-mu);
 }
 
 /* Link whose underline draws in from the left on hover */

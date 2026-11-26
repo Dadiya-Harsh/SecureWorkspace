@@ -1,0 +1,18 @@
+{
+  "version": "0.1.0",
+  "tag": "v0.1.0",
+  "files": [
+    {
+      "id": "exe",
+      "name": "SecureWorkspace_0.1.0_x64-setup.exe",
+      "label": "Installer .exe",
+      "sha256": "0694728e2dd0ab5a259667efe2db34af37347e900ca819fdf35dbecd209eea94"
+    },
+    {
+      "id": "msi",
+      "name": "SecureWorkspace_0.1.0_x64_en-US.msi",
+      "label": "MSI package",
+      "sha256": "79f8efeb8a3cd74f889f7d209693d942ea28eaf892ff439752abf80c745134e1"
+    }
+  ]
+}
